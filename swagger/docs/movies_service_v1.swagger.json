@@ -1,0 +1,252 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Movies service",
+    "version": "1.0",
+    "contact": {
+      "name": "Falokut",
+      "url": "https://github.com/Falokut",
+      "email": "timur.sinelnik@yandex.ru"
+    }
+  },
+  "tags": [
+    {
+      "name": "moviesServiceV1"
+    }
+  ],
+  "schemes": [
+    "http"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/movie": {
+      "get": {
+        "operationId": "moviesServiceV1_GetMovie",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/movies_serviceMovie"
+            }
+          },
+          "404": {
+            "description": "Returned when the resource does not exist.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          },
+          "500": {
+            "description": "Something went wrong.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "movie_id",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "moviesServiceV1"
+        ]
+      }
+    },
+    "/v1/movies": {
+      "get": {
+        "operationId": "moviesServiceV1_GetMovies",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/movies_serviceMovies"
+            }
+          },
+          "404": {
+            "description": "Returned when the resource does not exist.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          },
+          "500": {
+            "description": "Something went wrong.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "movies_ids",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "genres_ids",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "directors_ids",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "country_ids",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "title",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "limit",
+            "description": "if limit = 0, will be used default limit = 10, if bigger than 100, will be used max limit = 100",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "moviesServiceV1"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "movies_serviceMovie": {
+      "type": "object",
+      "properties": {
+        "movie_id": {
+          "type": "string"
+        },
+        "plot": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "title_ru": {
+          "type": "string"
+        },
+        "title_en": {
+          "type": "string"
+        },
+        "budget": {
+          "type": "string"
+        },
+        "cast_id": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "genres_ids": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "directors_ids": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "duration": {
+          "type": "integer",
+          "format": "int32",
+          "title": "movie duration in minutes"
+        },
+        "country_ids": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "poster_picture_url": {
+          "type": "string"
+        },
+        "release_year": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "movies_serviceMovies": {
+      "type": "object",
+      "properties": {
+        "movies": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/movies_serviceMovie"
+          }
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    }
+  }
+}

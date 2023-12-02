@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package movies_service;
+option go_package = "movies_service/v1/protos";
+
+
+message GetMovieRequest { string movieID = 1 [ json_name = "movie_id" ]; }
+
+// for multiple values use ',' separator
+message GetMoviesRequest {
+  optional string moviesIDs = 1[json_name="movies_ids"];
+  optional string genresIDs = 2[json_name="genres_ids"];
+  optional string directorsIDs=3[json_name="directors_ids"];
+  optional string countriesIDs = 4[json_name="country_ids"];
+  optional string title = 5;
+  // if limit = 0, will be used default limit = 10, if bigger than 100, will be used max limit = 100
+  uint32 limit = 6;
+  uint32 offset = 7;
+}
+
+
+message Movie {
+  string movieID = 1[json_name="movie_id"];
+  string plot = 2;
+  string description = 3;
+  string titleRU = 4[json_name="title_ru"];
+  string titleEN = 5[json_name="title_en"];
+  string budget = 6;
+  int32 castID = 7 [ json_name = "cast_id" ];
+  repeated int32 genresIDs = 8[json_name="genres_ids"];
+  repeated int32 directorsIDs = 9[json_name="directors_ids"];
+  // movie duration in minutes
+  int32 duration = 10;
+  repeated int32 countriesIDs = 11[json_name="country_ids"];
+  string posterPictureURL = 12 [ json_name = "poster_picture_url" ];
+  int32 releaseYear = 13[json_name="release_year"];
+};
+
+
+message Movies {
+  map<string,Movie> movies = 1; 
+}
+
+message UserErrorMessage { string message = 1 [ json_name = "message" ]; }

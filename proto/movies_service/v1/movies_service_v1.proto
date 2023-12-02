@@ -1,0 +1,61 @@
+syntax= "proto3";
+
+package movies_service;
+import "movies_service_v1_messages.proto";
+option go_package = "movies_service/v1/protos";
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+    schemes: HTTP;
+    //schemes: HTTPS;
+    consumes: "application/json";
+    produces: "application/json";
+
+    info: {
+        title: "Movies service";
+        version: "1.0";
+        contact: {
+            name: "Falokut";
+            url: "https://github.com/Falokut";
+            email: "timur.sinelnik@yandex.ru";
+        };
+    }
+    responses: {
+		key: "404";
+		value: {
+			description: "Returned when the resource does not exist.";
+			schema: {
+				json_schema: {
+					ref: "#/definitions/rpcStatus";
+				}
+			}
+		}
+	}
+    responses: {
+		key: "500";
+		value: {
+			description: "Something went wrong.";
+			schema: {
+				json_schema: {
+					ref: "#/definitions/rpcStatus";
+				}
+			}
+		}
+	}
+};
+
+service moviesServiceV1 {
+    rpc GetMovie(GetMovieRequest) returns(Movie) {
+        option (google.api.http) = {
+            get: "/v1/movie"
+        };
+    }
+    
+    rpc GetMovies(GetMoviesRequest) returns(Movies) {
+        option (google.api.http) = {
+            get: "/v1/movies"
+        };
+    }
+}
