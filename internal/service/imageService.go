@@ -29,11 +29,11 @@ func NewImageService(cfg ImageServiceConfig, logger *logrus.Logger) *imageServic
 }
 
 // Returns movie poster url for GET request
-func (s *imageService) GetMoviePosterURL(ctx context.Context, PictureID string) string {
+func (s *imageService) GetMoviePosterURL(ctx context.Context, pictureID string) string {
 	span, _ := opentracing.StartSpanFromContext(ctx, "imageService.GetMoviePosterURL")
 	defer span.Finish()
 
-	if PictureID == "" {
+	if pictureID == "" {
 		return ""
 	}
 
@@ -44,7 +44,7 @@ func (s *imageService) GetMoviePosterURL(ctx context.Context, PictureID string) 
 	}
 
 	q := u.Query()
-	q.Add("image_id", PictureID)
+	q.Add("image_id", pictureID)
 	q.Add("category", s.cfg.PosterPictureCategory)
 	u.RawQuery = q.Encode()
 	return u.String()

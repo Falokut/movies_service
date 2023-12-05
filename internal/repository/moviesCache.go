@@ -72,13 +72,13 @@ type cacheMovieFilterKey struct {
 	Offset       uint32 `json:"7,omitempty"`
 }
 
-func buildFilterKey(Filter MoviesFilter, limit, offset uint32) string {
+func buildFilterKey(filter MoviesFilter, limit, offset uint32) string {
 	key := cacheMovieFilterKey{
-		MoviesIDs:    Filter.MoviesIDs,
-		GenresIDs:    Filter.GenresIDs,
-		DiretorsIDs:  Filter.DirectorsIDs,
-		CountriesIDs: Filter.CountriesIDs,
-		Title:        Filter.Title,
+		MoviesIDs:    filter.MoviesIDs,
+		GenresIDs:    filter.GenresIDs,
+		DiretorsIDs:  filter.DirectorsIDs,
+		CountriesIDs: filter.CountriesIDs,
+		Title:        filter.Title,
 		Limit:        limit,
 		Offset:       offset,
 	}
@@ -91,11 +91,11 @@ type cachedFilteredRequest struct {
 	Ids []string `json:"-,"`
 }
 
-func (c *moviesCache) GetMovies(ctx context.Context, Filter MoviesFilter, limit, offset uint32) ([]string, error) {
+func (c *moviesCache) GetMovies(ctx context.Context, filter MoviesFilter, limit, offset uint32) ([]string, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "moviesCache.GetMovies")
 	defer span.Finish()
 
-	key := buildFilterKey(Filter, limit, offset)
+	key := buildFilterKey(filter, limit, offset)
 	res, err := c.rdb.Get(ctx, key).Bytes()
 	if err != nil {
 		return []string{}, err
@@ -109,7 +109,7 @@ func (c *moviesCache) GetMovies(ctx context.Context, Filter MoviesFilter, limit,
 	return cache.Ids, nil
 }
 
-func (c *moviesCache) CacheMovies(ctx context.Context, movies []Movie, TTL time.Duration) error {
+func (c *moviesCache) CacheMovies(ctx context.Context, movies []Movie, ttl time.Duration) error {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "moviesCache.CacheMovies")
 	defer span.Finish()
 
@@ -120,19 +120,19 @@ func (c *moviesCache) CacheMovies(ctx context.Context, movies []Movie, TTL time.
 		if err != nil {
 			return err
 		}
-		tx.Set(ctx, fmt.Sprint(movie.ID), toCache, TTL)
+		tx.Set(ctx, fmt.Sprint(movie.ID), toCache, ttl)
 	}
 	_, err := tx.Exec(ctx)
 
 	return err
 }
 
-func (c *moviesCache) CacheFilteredRequest(ctx context.Context, Filter MoviesFilter,
-	limit, offset uint32, moviesIDs []string, TTL time.Duration) error {
+func (c *moviesCache) CacheFilteredRequest(ctx context.Context, filter MoviesFilter,
+	limit, offset uint32, moviesIDs []string, ttl time.Duration) error {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "moviesCache.CacheFilteredRequest")
 	defer span.Finish()
 
-	key := buildFilterKey(Filter, limit, offset)
+	key := buildFilterKey(filter, limit, offset)
 
 	var toCache = cachedFilteredRequest{
 		Ids: moviesIDs,
@@ -143,7 +143,7 @@ func (c *moviesCache) CacheFilteredRequest(ctx context.Context, Filter MoviesFil
 		return err
 	}
 
-	return c.rdb.Set(ctx, key, marshalled, TTL).Err()
+	return c.rdb.Set(ctx, key, marshalled, ttl).Err()
 }
 
 type cachedMovie struct {

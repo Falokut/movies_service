@@ -50,18 +50,20 @@ func (m *RepositoryManager) GetMovie(ctx context.Context, movieID string) (Movie
 	}
 
 	go func(Movie) {
-		m.cache.CacheMovies(context.Background(), []Movie{movie}, m.cfg.MovieTTL)
+		if err := m.cache.CacheMovies(context.Background(), []Movie{movie}, m.cfg.MovieTTL); err != nil {
+			m.logger.Error(err)
+		}
 	}(movie)
 
 	return movie, nil
 }
 
-func (m *RepositoryManager) GetMovies(ctx context.Context, Filter MoviesFilter, limit, offset uint32) ([]Movie, error) {
+func (m *RepositoryManager) GetMovies(ctx context.Context, filter MoviesFilter, limit, offset uint32) ([]Movie, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "RepositoryManager.GetMovie")
 	defer span.Finish()
 
 	m.logger.Info("Trying get movies ids from cache")
-	moviesIds, err := m.cache.GetMovies(ctx, Filter, limit, offset)
+	moviesIds, err := m.cache.GetMovies(ctx, filter, limit, offset)
 	inCache := true
 	if err != nil {
 		m.logger.Warn(err)
@@ -70,14 +72,16 @@ func (m *RepositoryManager) GetMovies(ctx context.Context, Filter MoviesFilter, 
 
 	if !inCache {
 		m.logger.Info("Getting movies ids from repository")
-		moviesIds, err = m.repo.GetMovies(ctx, Filter, limit, offset)
+		moviesIds, err = m.repo.GetMovies(ctx, filter, limit, offset)
 		if err != nil {
 			return []Movie{}, err
 		}
 
 		go func() {
 			m.logger.Info("Caching filtered request")
-			m.cache.CacheFilteredRequest(context.Background(), Filter, limit, offset, moviesIds, m.cfg.FilteredTTL)
+			if err :=	m.cache.CacheFilteredRequest(context.Background(), filter, limit, offset, moviesIds, m.cfg.FilteredTTL); err != nil {
+				m.logger.Error(err)
+			}
 		}()
 	}
 
