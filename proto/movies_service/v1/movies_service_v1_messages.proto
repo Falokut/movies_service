@@ -22,18 +22,17 @@ message GetMoviesRequest {
 message Movie {
   string movieID = 1[json_name="movie_id"];
   string plot = 2;
-  string description = 3;
-  string titleRU = 4[json_name="title_ru"];
-  string titleEN = 5[json_name="title_en"];
-  string budget = 6;
-  int32 castID = 7 [ json_name = "cast_id" ];
-  repeated int32 genresIDs = 8[json_name="genres_ids"];
-  repeated int32 directorsIDs = 9[json_name="directors_ids"];
+  string titleRU = 3[json_name="title_ru"];
+  string titleEN = 4[json_name="title_en"];
+  string budget = 5;
+  int32 castID = 6 [ json_name = "cast_id" ];
+  repeated int32 genresIDs = 7[json_name="genres_ids"];
+  repeated int32 directorsIDs = 8[json_name="directors_ids"];
   // movie duration in minutes
-  int32 duration = 10;
-  repeated int32 countriesIDs = 11[json_name="country_ids"];
-  string posterPictureURL = 12 [ json_name = "poster_picture_url" ];
-  int32 releaseYear = 13[json_name="release_year"];
+  int32 duration = 9;
+  repeated int32 countriesIDs = 19[json_name="country_ids"];
+  string posterPictureURL = 11 [ json_name = "poster_picture_url" ];
+  int32 releaseYear = 12[json_name="release_year"];
 };
 
 

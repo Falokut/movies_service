@@ -19,7 +19,7 @@ type Movie struct {
 	CastID       int32          `db:"cast_id"`
 	Duration     int32          `db:"duration"`
 	PictureID    sql.NullString `db:"poster_picture_id"`
-	DiretorsIDs  sql.NullString `db:"directors"`
+	DirectorsIDs sql.NullString `db:"directors"`
 	CountriesIDs sql.NullString `db:"countries"`
 	ReleaseYear  int32          `db:"release_year"`
 }
@@ -27,7 +27,7 @@ type Movie struct {
 type MoviesFilter struct {
 	MoviesIDs    string
 	GenresIDs    string
-	DiretorsIDs  string
+	DirectorsIDs string
 	CountriesIDs string
 	Title        string
 }
@@ -41,6 +41,7 @@ type DBConfig struct {
 	SSLMode  string `yaml:"ssl_mode" env:"DB_SSL_MODE"`
 }
 
+//go:generate mockgen -source=repository.go -destination=mocks/moviesRepositoryManager.go
 type MoviesRepositoryManager interface {
 	GetMovie(ctx context.Context, movieId string) (Movie, error)
 	GetMovies(ctx context.Context, Filter MoviesFilter, limit, offset uint32) ([]Movie, error)

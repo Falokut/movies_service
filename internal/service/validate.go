@@ -35,10 +35,7 @@ func validateFilter(filter *movies_service.GetMoviesRequest) error {
 }
 
 func checkFilterParam(val string) error {
-	exp, err := regexp.Compile("^[!-&!+,0-9]+$")
-	if err != nil {
-		return err
-	}
+	exp := regexp.MustCompile("^[!-&!+,0-9]+$")
 	if !exp.Match([]byte(val)) {
 		return ErrInvalidFilter
 	}

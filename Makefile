@@ -37,3 +37,5 @@ swagger-doc-gen:
 
 .swagger:	swagger-clear	create-swagger-dir	swagger-doc-gen	
 .protoc:	protoc-clear	protoc-gen	gateway-gen	.swagger
+.docker-build:
+	docker compose -f $(project_name).yml up --build

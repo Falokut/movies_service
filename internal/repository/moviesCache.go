@@ -76,7 +76,7 @@ func buildFilterKey(Filter MoviesFilter, limit, offset uint32) string {
 	key := cacheMovieFilterKey{
 		MoviesIDs:    Filter.MoviesIDs,
 		GenresIDs:    Filter.GenresIDs,
-		DiretorsIDs:  Filter.DiretorsIDs,
+		DiretorsIDs:  Filter.DirectorsIDs,
 		CountriesIDs: Filter.CountriesIDs,
 		Title:        Filter.Title,
 		Limit:        limit,
@@ -172,7 +172,7 @@ func convertMovieToCacheMovie(movie Movie) cachedMovie {
 		CastID:       movie.CastID,
 		Duration:     movie.Duration,
 		PictureID:    movie.PictureID.String,
-		DiretorsIDs:  movie.DiretorsIDs.String,
+		DiretorsIDs:  movie.DirectorsIDs.String,
 		CountriesIDs: movie.CountriesIDs.String,
 		ReleaseYear:  movie.ReleaseYear,
 	}
@@ -189,7 +189,7 @@ func convertCacheMovieToMovie(movie cachedMovie) Movie {
 		CastID:       movie.CastID,
 		Duration:     movie.Duration,
 		PictureID:    sql.NullString{String: movie.PictureID, Valid: true},
-		DiretorsIDs:  sql.NullString{String: movie.DiretorsIDs, Valid: true},
+		DirectorsIDs: sql.NullString{String: movie.DiretorsIDs, Valid: true},
 		CountriesIDs: sql.NullString{String: movie.CountriesIDs, Valid: true},
 		ReleaseYear:  movie.ReleaseYear,
 	}

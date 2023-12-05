@@ -91,7 +91,7 @@ func convertFilterToWhere(filter MoviesFilter) string {
 	str, first = arrayContains("countries", filter.CountriesIDs, first)
 	statement += str
 
-	str, first = arrayContains("directors", filter.DiretorsIDs, first)
+	str, first = arrayContains("directors", filter.DirectorsIDs, first)
 	statement += str
 
 	if filter.Title != "" {

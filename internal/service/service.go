@@ -13,11 +13,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+//go:generate mockgen -source=service.go -destination=mocks/imagesService.go
 type ImagesService interface {
 	GetMoviePosterURL(ctx context.Context, PictureID string) string
-}
-
-type MoviesRepository interface {
 }
 
 type MoviesService struct {
@@ -65,14 +63,11 @@ func (s *MoviesService) GetMovies(ctx context.Context, in *movies_service.GetMov
 	if errors.Is(err, ErrInvalidFilter) {
 		return nil, s.errorHandler.createErrorResponce(ErrInvalidArgument, err.Error())
 	}
-	if err != nil {
-		return nil, s.errorHandler.createErrorResponce(ErrInternal, err.Error())
-	}
 
 	filter := repository.MoviesFilter{
 		MoviesIDs:    in.GetMoviesIDs(),
 		GenresIDs:    in.GetGenresIDs(),
-		DiretorsIDs:  in.GetDirectorsIDs(),
+		DirectorsIDs: in.GetDirectorsIDs(),
 		CountriesIDs: in.GetCountriesIDs(),
 		Title:        getTitle(in.GetTitle()),
 	}
@@ -110,7 +105,7 @@ func (s *MoviesService) convertDbMoviesToProto(ctx context.Context, movie reposi
 		Budget:           movie.Budget.String,
 		CastID:           movie.CastID,
 		GenresIDs:        s.intSliceFromString(movie.Genres.String),
-		DirectorsIDs:     s.intSliceFromString(movie.DiretorsIDs.String),
+		DirectorsIDs:     s.intSliceFromString(movie.DirectorsIDs.String),
 		CountriesIDs:     s.intSliceFromString(movie.CountriesIDs.String),
 		Duration:         movie.Duration,
 		PosterPictureURL: s.imagesService.GetMoviePosterURL(ctx, movie.PictureID.String),
