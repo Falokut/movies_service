@@ -7,5 +7,4 @@ Makefile
 *.md
 *.txt
 *.proto
-**/accounts_db/
-**/kafka/
+**/movies_people_db/
