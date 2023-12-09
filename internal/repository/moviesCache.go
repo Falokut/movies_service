@@ -147,34 +147,36 @@ func (c *moviesCache) CacheFilteredRequest(ctx context.Context, filter MoviesFil
 }
 
 type cachedMovie struct {
-	ID           string `json:"-"`
-	TitleRU      string `json:"title_ru"`
-	TitleEN      string `json:"title_en"`
-	Budget       string `json:"budget"`
-	Plot         string `json:"plot"`
-	Genres       string `json:"genres"`
-	CastID       int32  `json:"cast_id"`
-	Duration     int32  `json:"duration"`
-	PictureID    string `json:"picture_id"`
-	DiretorsIDs  string `json:"directors"`
-	CountriesIDs string `json:"countries"`
-	ReleaseYear  int32  `json:"release_year"`
+	ID                  string `json:"-"`
+	TitleRU             string `json:"title_ru"`
+	TitleEN             string `json:"title_en"`
+	Description         string `json:"description"`
+	Genres              string `json:"genres"`
+	CastID              int32  `json:"cast_id"`
+	Duration            int32  `json:"duration"`
+	PosterID            string `json:"poster_picture_id"`
+	BackgroundPictureID string `json:"background_picture_id"`
+	DiretorsIDs         string `json:"directors"`
+	CountriesIDs        string `json:"countries"`
+	ReleaseYear         int32  `json:"release_year"`
+	AgeRating           string `json:"age_rating"`
 }
 
 func convertMovieToCacheMovie(movie Movie) cachedMovie {
 	return cachedMovie{
-		ID:           movie.ID,
-		TitleRU:      movie.TitleRU,
-		TitleEN:      movie.TitleEN.String,
-		Budget:       movie.Budget.String,
-		Plot:         movie.Plot,
-		Genres:       movie.Genres.String,
-		CastID:       movie.CastID,
-		Duration:     movie.Duration,
-		PictureID:    movie.PictureID.String,
-		DiretorsIDs:  movie.DirectorsIDs.String,
-		CountriesIDs: movie.CountriesIDs.String,
-		ReleaseYear:  movie.ReleaseYear,
+		ID:                  movie.ID,
+		TitleRU:             movie.TitleRU,
+		TitleEN:             movie.TitleEN.String,
+		Description:         movie.Description,
+		Genres:              movie.Genres.String,
+		CastID:              movie.CastID,
+		Duration:            movie.Duration,
+		PosterID:            movie.PosterID.String,
+		BackgroundPictureID: movie.BackgroundPictureID.String,
+		DiretorsIDs:         movie.DirectorsIDs.String,
+		CountriesIDs:        movie.CountriesIDs.String,
+		ReleaseYear:         movie.ReleaseYear,
+		AgeRating:           movie.AgeRating,
 	}
 }
 
@@ -183,14 +185,14 @@ func convertCacheMovieToMovie(movie cachedMovie) Movie {
 		ID:           movie.ID,
 		TitleRU:      movie.TitleRU,
 		TitleEN:      sql.NullString{String: movie.TitleEN, Valid: true},
-		Budget:       sql.NullString{String: movie.Budget, Valid: true},
-		Plot:         movie.Plot,
+		Description:  movie.Description,
 		Genres:       sql.NullString{String: movie.Genres, Valid: true},
 		CastID:       movie.CastID,
 		Duration:     movie.Duration,
-		PictureID:    sql.NullString{String: movie.PictureID, Valid: true},
+		PosterID:     sql.NullString{String: movie.PosterID, Valid: true},
 		DirectorsIDs: sql.NullString{String: movie.DiretorsIDs, Valid: true},
 		CountriesIDs: sql.NullString{String: movie.CountriesIDs, Valid: true},
 		ReleaseYear:  movie.ReleaseYear,
+		AgeRating:    movie.AgeRating,
 	}
 }

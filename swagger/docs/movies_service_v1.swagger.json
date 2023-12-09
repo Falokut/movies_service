@@ -24,6 +24,40 @@
     "application/json"
   ],
   "paths": {
+    "/v1/age-ratings": {
+      "get": {
+        "operationId": "moviesServiceV1_GetAgeRatings",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/movies_serviceAgeRatings"
+            }
+          },
+          "404": {
+            "description": "Returned when the resource does not exist.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          },
+          "500": {
+            "description": "Something went wrong.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "moviesServiceV1"
+        ]
+      }
+    },
     "/v1/movie": {
       "get": {
         "operationId": "moviesServiceV1_GetMovie",
@@ -66,14 +100,14 @@
         ]
       }
     },
-    "/v1/movies": {
+    "/v1/movies/preview": {
       "get": {
-        "operationId": "moviesServiceV1_GetMovies",
+        "operationId": "moviesServiceV1_GetMoviesPreview",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/movies_serviceMovies"
+              "$ref": "#/definitions/movies_serviceMoviesPreview"
             }
           },
           "404": {
@@ -127,6 +161,12 @@
             "type": "string"
           },
           {
+            "name": "age_ratings",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
             "name": "limit",
             "description": "if limit = 0, will be used default limit = 10, if bigger than 100, will be used max limit = 100",
             "in": "query",
@@ -149,22 +189,27 @@
     }
   },
   "definitions": {
+    "movies_serviceAgeRatings": {
+      "type": "object",
+      "properties": {
+        "ratings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "movies_serviceMovie": {
       "type": "object",
       "properties": {
-        "movie_id": {
-          "type": "string"
-        },
-        "plot": {
+        "description": {
           "type": "string"
         },
         "title_ru": {
           "type": "string"
         },
         "title_en": {
-          "type": "string"
-        },
-        "budget": {
           "type": "string"
         },
         "cast_id": {
@@ -197,22 +242,71 @@
             "format": "int32"
           }
         },
-        "poster_picture_url": {
+        "poster_url": {
+          "type": "string"
+        },
+        "background_url": {
           "type": "string"
         },
         "release_year": {
           "type": "integer",
           "format": "int32"
+        },
+        "age_rating": {
+          "type": "string"
         }
       }
     },
-    "movies_serviceMovies": {
+    "movies_serviceMoviePreview": {
+      "type": "object",
+      "properties": {
+        "short_description": {
+          "type": "string"
+        },
+        "title_ru": {
+          "type": "string"
+        },
+        "title_en": {
+          "type": "string"
+        },
+        "duration": {
+          "type": "integer",
+          "format": "int32",
+          "title": "movie duration in minutes"
+        },
+        "preview_poster_url": {
+          "type": "string"
+        },
+        "country_ids": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "genres_ids": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "release_year": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "age_rating": {
+          "type": "string"
+        }
+      }
+    },
+    "movies_serviceMoviesPreview": {
       "type": "object",
       "properties": {
         "movies": {
           "type": "object",
           "additionalProperties": {
-            "$ref": "#/definitions/movies_serviceMovie"
+            "$ref": "#/definitions/movies_serviceMoviePreview"
           }
         }
       }

@@ -65,15 +65,21 @@ func main() {
 	repo := repository.NewMoviesRepository(database)
 	defer repo.Shutdown()
 
-	cache, err := repository.NewMoviesCache(logger.Logger, getCacheOptions(appCfg))
+	moviesCache, err := repository.NewMoviesCache(logger.Logger, getMoviesCacheOptions(appCfg))
 	if err != nil {
-		logger.Fatalf("Shutting down, connection to the cache is not established: %s", err.Error())
+		logger.Fatalf("Shutting down, connection to the movies cache is not established: %s", err.Error())
 	}
-	defer cache.Shutdown()
+	defer moviesCache.Shutdown()
+
+	moviesPreviewCache, err := repository.NewMoviesPreviewCache(logger.Logger, getMoviesPreviewCacheOptions(appCfg))
+	if err != nil {
+		logger.Fatalf("Shutting down, connection to the movies preview cache is not established: %s", err.Error())
+	}
+	defer moviesPreviewCache.Shutdown()
 
 	logger.Info("Healthcheck initializing")
 	healthcheckManager := healthcheck.NewHealthManager(logger.Logger,
-		[]healthcheck.HealthcheckResource{database, cache}, appCfg.HealthcheckPort, nil)
+		[]healthcheck.HealthcheckResource{database, moviesCache, moviesPreviewCache}, appCfg.HealthcheckPort, nil)
 	go func() {
 		logger.Info("Healthcheck server running")
 		if err := healthcheckManager.RunHealthcheckEndpoint(); err != nil {
@@ -84,10 +90,12 @@ func main() {
 	imagesService := service.NewImageService(getImageServiceConfig(appCfg),
 		logger.Logger)
 
-	repoManager := repository.NewMoviesRepositoryManager(repo, cache,
+	repoManager := repository.NewMoviesRepositoryManager(repo, moviesCache, repo,
+		moviesPreviewCache, repo,
 		repository.RepositoryManagerConfig{
-			MovieTTL:    appCfg.RepositoryManager.MovieTTL,
-			FilteredTTL: appCfg.RepositoryManager.FilteredTTL,
+			MovieTTL:        appCfg.RepositoryManager.MovieTTL,
+			FilteredTTL:     appCfg.RepositoryManager.FilteredTTL,
+			MoviePreviewTTL: appCfg.RepositoryManager.MoviePreviewTTL,
 		}, logger.Logger)
 	logger.Info("Service initializing")
 	service := service.NewMoviesService(logger.Logger, repoManager, imagesService)
@@ -105,8 +113,8 @@ func main() {
 
 func getImageServiceConfig(cfg *config.Config) service.ImageServiceConfig {
 	return service.ImageServiceConfig{
-		BasePosterPictureUrl:  cfg.ImageStorageService.BasePosterPictureUrl,
-		PosterPictureCategory: cfg.ImageStorageService.PosterPictureCategory,
+		BasePosterPictureUrl: cfg.ImageStorageService.BasePosterPictureUrl,
+		PicturesCategory:     cfg.ImageStorageService.PicturesCategory,
 	}
 }
 
@@ -127,11 +135,19 @@ func getListenServerConfig(cfg *config.Config) server.Config {
 	}
 }
 
-func getCacheOptions(cfg *config.Config) *redis.Options {
+func getMoviesCacheOptions(cfg *config.Config) *redis.Options {
 	return &redis.Options{
 		Network:  cfg.MoviesCache.Network,
 		Addr:     cfg.MoviesCache.Addr,
 		Password: cfg.MoviesCache.Password,
 		DB:       cfg.MoviesCache.DB,
+	}
+}
+func getMoviesPreviewCacheOptions(cfg *config.Config) *redis.Options {
+	return &redis.Options{
+		Network:  cfg.MoviesPreviewCache.Network,
+		Addr:     cfg.MoviesPreviewCache.Addr,
+		Password: cfg.MoviesPreviewCache.Password,
+		DB:       cfg.MoviesPreviewCache.DB,
 	}
 }

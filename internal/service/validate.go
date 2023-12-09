@@ -3,13 +3,14 @@ package service
 import (
 	"errors"
 	"regexp"
+	"strings"
 
 	movies_service "github.com/Falokut/movies_service/pkg/movies_service/v1/protos"
 )
 
 var ErrInvalidFilter = errors.New("invalid filter value, filter must contain only digits and commas")
 
-func validateFilter(filter *movies_service.GetMoviesRequest) error {
+func validateFilter(filter *movies_service.GetMoviesPreviewRequest) error {
 	if filter.GetGenresIDs() != "" {
 		if err := checkFilterParam(*filter.GenresIDs); err != nil {
 			return err
@@ -30,7 +31,11 @@ func validateFilter(filter *movies_service.GetMoviesRequest) error {
 			return err
 		}
 	}
-
+	if filter.GetAgeRatings() != "" {
+		if strings.Contains(*filter.AgeRatings, "'") {
+			return ErrInvalidFilter
+		}
+	}
 	return nil
 }
 

@@ -34,16 +34,16 @@ func (m *MockImagesService) EXPECT() *MockImagesServiceMockRecorder {
 	return m.recorder
 }
 
-// GetMoviePosterURL mocks base method.
-func (m *MockImagesService) GetMoviePosterURL(ctx context.Context, PictureID string) string {
+// GetPictureURL mocks base method.
+func (m *MockImagesService) GetPictureURL(ctx context.Context, PictureID string) string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetMoviePosterURL", ctx, PictureID)
+	ret := m.ctrl.Call(m, "GetPictureURL", ctx, PictureID)
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// GetMoviePosterURL indicates an expected call of GetMoviePosterURL.
-func (mr *MockImagesServiceMockRecorder) GetMoviePosterURL(ctx, PictureID interface{}) *gomock.Call {
+// GetPictureURL indicates an expected call of GetPictureURL.
+func (mr *MockImagesServiceMockRecorder) GetPictureURL(ctx, PictureID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMoviePosterURL", reflect.TypeOf((*MockImagesService)(nil).GetMoviePosterURL), ctx, PictureID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPictureURL", reflect.TypeOf((*MockImagesService)(nil).GetPictureURL), ctx, PictureID)
 }

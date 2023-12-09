@@ -26,8 +26,8 @@ type Config struct {
 	} `yaml:"prometheus"`
 
 	ImageStorageService struct {
-		BasePosterPictureUrl  string `yaml:"base_poster_picture_url" env:"BASE_POSTER_PICTURE_URL"`
-		PosterPictureCategory string `yaml:"poster_picture_category" env:"PROFILE_POSTER_CATEGORY"`
+		BasePosterPictureUrl string `yaml:"base_poster_picture_url" env:"BASE_POSTER_PICTURE_URL"`
+		PicturesCategory     string `yaml:"pictures_category" env:"PICRURES_CATEGORY"`
 	} `yaml:"image_storage_service"`
 
 	MoviesCache struct {
@@ -36,10 +36,17 @@ type Config struct {
 		Password string `yaml:"password" env:"MOVIES_CACHE_PASSWORD"`
 		DB       int    `yaml:"db" env:"MOVIES_CACHE_DB"`
 	} `yaml:"movies_cache"`
-	
+	MoviesPreviewCache struct {
+		Network  string `yaml:"network" env:"MOVIES_PREVIEW_CACHE_NETWORK"`
+		Addr     string `yaml:"addr" env:"MOVIES_PREVIEW_CACHE_ADDR"`
+		Password string `yaml:"password" env:"MOVIES_PREVIEW_CACHE_PASSWORD"`
+		DB       int    `yaml:"db" env:"MOVIES_PREVIEW_CACHE_DB"`
+	} `yaml:"movies_preview_cache"`
+
 	RepositoryManager struct {
-		MovieTTL    time.Duration `yaml:"movie_ttl"`
-		FilteredTTL time.Duration `yaml:"filtered_ttl"`
+		MovieTTL        time.Duration `yaml:"movie_ttl"`
+		FilteredTTL     time.Duration `yaml:"filtered_ttl"`
+		MoviePreviewTTL time.Duration `yaml:"movie_preview_ttl"`
 	} `yaml:"repository_manager"`
 
 	DBConfig     repository.DBConfig `yaml:"db_config"`

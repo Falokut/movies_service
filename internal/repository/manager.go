@@ -11,32 +11,42 @@ import (
 )
 
 type RepositoryManagerConfig struct {
-	MovieTTL    time.Duration
-	FilteredTTL time.Duration
+	MovieTTL        time.Duration
+	FilteredTTL     time.Duration
+	MoviePreviewTTL time.Duration
 }
 
 type RepositoryManager struct {
-	repo   MoviesRepository
-	cache  MoviesCache
-	cfg    RepositoryManagerConfig
-	logger *logrus.Logger
+	moviesRepo         MoviesRepository
+	moviesCache        MoviesCache
+	moviesPreviewRepo  MoviesPreviewRepository
+	moviesPreviewCache MoviesPreviewCache
+	ageRatingsRepo     AgeRatingRepository
+	cfg                RepositoryManagerConfig
+	logger             *logrus.Logger
 }
 
-func NewMoviesRepositoryManager(repo MoviesRepository, cache MoviesCache,
+func NewMoviesRepositoryManager(moviesRepo MoviesRepository, moviesCache MoviesCache, moviesPreviewRepo MoviesPreviewRepository,
+	moviesPreviewCache MoviesPreviewCache, ageRatingsRepo AgeRatingRepository,
 	cfg RepositoryManagerConfig, logger *logrus.Logger) *RepositoryManager {
 	return &RepositoryManager{
-		repo:   repo,
-		cache:  cache,
-		cfg:    cfg,
-		logger: logger,
+		moviesRepo:         moviesRepo,
+		moviesCache:        moviesCache,
+		moviesPreviewCache: moviesPreviewCache,
+		moviesPreviewRepo:  moviesPreviewRepo,
+		ageRatingsRepo:     ageRatingsRepo,
+		cfg:                cfg,
+		logger:             logger,
 	}
 }
 
 func (m *RepositoryManager) GetMovie(ctx context.Context, movieID string) (Movie, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "RepositoryManager.GetMovie")
 	defer span.Finish()
+	var err error
+	defer span.SetTag("has_error", err != nil)
 
-	movie, err := m.cache.GetMovie(ctx, movieID)
+	movie, err := m.moviesCache.GetMovie(ctx, movieID)
 	if err == nil {
 		return movie, nil
 	}
@@ -44,13 +54,13 @@ func (m *RepositoryManager) GetMovie(ctx context.Context, movieID string) (Movie
 		m.logger.Warn(err)
 	}
 
-	movie, err = m.repo.GetMovie(ctx, movieID)
+	movie, err = m.moviesRepo.GetMovie(ctx, movieID)
 	if err != nil {
 		return Movie{}, err
 	}
 
 	go func(Movie) {
-		if err := m.cache.CacheMovies(context.Background(), []Movie{movie}, m.cfg.MovieTTL); err != nil {
+		if err := m.moviesCache.CacheMovies(context.Background(), []Movie{movie}, m.cfg.MovieTTL); err != nil {
 			m.logger.Error(err)
 		}
 	}(movie)
@@ -58,12 +68,42 @@ func (m *RepositoryManager) GetMovie(ctx context.Context, movieID string) (Movie
 	return movie, nil
 }
 
-func (m *RepositoryManager) GetMovies(ctx context.Context, filter MoviesFilter, limit, offset uint32) ([]Movie, error) {
+func (m *RepositoryManager) GetMoviePreview(ctx context.Context, movieID string) (MoviePreview, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "RepositoryManager.GetMoviePreview")
+	defer span.Finish()
+	var err error
+	defer span.SetTag("has_error", err != nil)
+
+	movie, err := m.moviesPreviewCache.GetMovie(ctx, movieID)
+	if err == nil {
+		return movie, nil
+	}
+	if !errors.Is(err, redis.Nil) {
+		m.logger.Warn(err)
+	}
+
+	movie, err = m.moviesPreviewRepo.GetMoviePreview(ctx, movieID)
+	if err != nil {
+		return MoviePreview{}, err
+	}
+
+	go func(MoviePreview) {
+		if err := m.moviesPreviewCache.CacheMovies(context.Background(), []MoviePreview{movie}, m.cfg.MoviePreviewTTL); err != nil {
+			m.logger.Error(err)
+		}
+	}(movie)
+
+	return movie, nil
+}
+
+func (m *RepositoryManager) GetMoviesPreview(ctx context.Context, filter MoviesFilter, limit, offset uint32) ([]MoviePreview, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "RepositoryManager.GetMovie")
 	defer span.Finish()
+	var err error
+	defer span.SetTag("has_error", err != nil)
 
 	m.logger.Info("Trying get movies ids from cache")
-	moviesIds, err := m.cache.GetMovies(ctx, filter, limit, offset)
+	moviesIds, err := m.moviesPreviewCache.GetMovies(ctx, filter, limit, offset)
 	inCache := true
 	if err != nil {
 		m.logger.Warn(err)
@@ -72,14 +112,15 @@ func (m *RepositoryManager) GetMovies(ctx context.Context, filter MoviesFilter, 
 
 	if !inCache {
 		m.logger.Info("Getting movies ids from repository")
-		moviesIds, err = m.repo.GetMovies(ctx, filter, limit, offset)
+		moviesIds, err = m.moviesPreviewRepo.GetMoviesPreview(ctx, filter, limit, offset)
 		if err != nil {
-			return []Movie{}, err
+			return []MoviePreview{}, err
 		}
 
 		go func() {
 			m.logger.Info("Caching filtered request")
-			if err :=	m.cache.CacheFilteredRequest(context.Background(), filter, limit, offset, moviesIds, m.cfg.FilteredTTL); err != nil {
+			if err := m.moviesPreviewCache.CacheFilteredRequest(context.Background(),
+				filter, limit, offset, moviesIds, m.cfg.FilteredTTL); err != nil {
 				m.logger.Error(err)
 			}
 		}()
@@ -87,18 +128,18 @@ func (m *RepositoryManager) GetMovies(ctx context.Context, filter MoviesFilter, 
 
 	m.logger.Info("Checking movies ids nums")
 	if len(moviesIds) == 0 {
-		return []Movie{}, ErrNotFound
+		return []MoviePreview{}, ErrNotFound
 	}
 
 	m.logger.Info("Filling movies")
-	var movies = make([]Movie, 0, len(moviesIds))
+	var movies = make([]MoviePreview, 0, len(moviesIds))
 	for _, id := range moviesIds {
-		movie, err := m.GetMovie(ctx, id)
+		movie, err := m.GetMoviePreview(ctx, id)
 		if errors.Is(err, ErrNotFound) {
 			continue
 		}
 		if err != nil {
-			return []Movie{}, err
+			return []MoviePreview{}, err
 		}
 
 		movies = append(movies, movie)
@@ -106,4 +147,18 @@ func (m *RepositoryManager) GetMovies(ctx context.Context, filter MoviesFilter, 
 	}
 
 	return movies, nil
+}
+
+func (m *RepositoryManager) GetAgeRatings(ctx context.Context) ([]string, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "RepositoryManager.GetAgeRatings")
+	defer span.Finish()
+	var err error
+	defer span.SetTag("has_error", err != nil)
+
+	ratings, err := m.ageRatingsRepo.GetAgeRatings(ctx)
+	if err != nil {
+		return []string{}, err
+	}
+
+	return ratings, nil
 }

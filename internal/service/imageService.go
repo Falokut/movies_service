@@ -9,8 +9,8 @@ import (
 )
 
 type ImageServiceConfig struct {
-	BasePosterPictureUrl  string
-	PosterPictureCategory string
+	BasePosterPictureUrl string
+	PicturesCategory     string
 }
 
 type imageService struct {
@@ -28,9 +28,9 @@ func NewImageService(cfg ImageServiceConfig, logger *logrus.Logger) *imageServic
 	}
 }
 
-// Returns movie poster url for GET request
-func (s *imageService) GetMoviePosterURL(ctx context.Context, pictureID string) string {
-	span, _ := opentracing.StartSpanFromContext(ctx, "imageService.GetMoviePosterURL")
+// Returns picture url for GET request
+func (s *imageService) GetPictureURL(ctx context.Context, pictureID string) string {
+	span, _ := opentracing.StartSpanFromContext(ctx, "imageService.GetPictureURL")
 	defer span.Finish()
 
 	if pictureID == "" {
@@ -45,7 +45,7 @@ func (s *imageService) GetMoviePosterURL(ctx context.Context, pictureID string) 
 
 	q := u.Query()
 	q.Add("image_id", pictureID)
-	q.Add("category", s.cfg.PosterPictureCategory)
+	q.Add("category", s.cfg.PicturesCategory)
 	u.RawQuery = q.Encode()
 	return u.String()
 }

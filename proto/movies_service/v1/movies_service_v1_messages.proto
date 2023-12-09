@@ -7,37 +7,53 @@ option go_package = "movies_service/v1/protos";
 message GetMovieRequest { string movieID = 1 [ json_name = "movie_id" ]; }
 
 // for multiple values use ',' separator
-message GetMoviesRequest {
+message GetMoviesPreviewRequest {
   optional string moviesIDs = 1[json_name="movies_ids"];
   optional string genresIDs = 2[json_name="genres_ids"];
   optional string directorsIDs=3[json_name="directors_ids"];
   optional string countriesIDs = 4[json_name="country_ids"];
   optional string title = 5;
+  optional string ageRatings = 6[json_name="age_ratings"];
   // if limit = 0, will be used default limit = 10, if bigger than 100, will be used max limit = 100
-  uint32 limit = 6;
-  uint32 offset = 7;
+  uint32 limit = 7;
+  uint32 offset = 8;
 }
 
+message MoviePreview {
+  string shortDescription = 1     [json_name="short_description"];
+  string titleRU = 2              [json_name="title_ru"];
+  string titleEN = 3              [json_name="title_en"];
+  // movie duration in minutes
+  int32 duration = 4;
+  string previewPosterURL = 5     [json_name = "preview_poster_url" ];
+  repeated int32 countriesIDs = 6 [json_name="country_ids"];
+  repeated int32 genresIDs = 7    [json_name="genres_ids"];
+  int32 releaseYear = 8           [json_name="release_year"];
+  string	ageRating  = 9          [json_name="age_rating"];
+}
+
+message MoviesPreview {
+  map<string, MoviePreview> movies = 1;
+}
+
+message AgeRatings {
+  repeated string ratings = 1;
+}
 
 message Movie {
-  string movieID = 1[json_name="movie_id"];
-  string plot = 2;
-  string titleRU = 3[json_name="title_ru"];
-  string titleEN = 4[json_name="title_en"];
-  string budget = 5;
-  int32 castID = 6 [ json_name = "cast_id" ];
-  repeated int32 genresIDs = 7[json_name="genres_ids"];
-  repeated int32 directorsIDs = 8[json_name="directors_ids"];
+  string description = 1;
+  string titleRU = 2                      [json_name="title_ru"];
+  string titleEN = 3                      [json_name="title_en"];
+  int32 castID = 4                        [json_name="cast_id" ];
+  repeated int32 genresIDs = 5            [json_name="genres_ids"];
+  repeated int32 directorsIDs = 6         [json_name="directors_ids"];
   // movie duration in minutes
-  int32 duration = 9;
-  repeated int32 countriesIDs = 19[json_name="country_ids"];
-  string posterPictureURL = 11 [ json_name = "poster_picture_url" ];
-  int32 releaseYear = 12[json_name="release_year"];
+  int32 duration = 7;
+  repeated int32 countriesIDs = 8         [json_name="country_ids"];
+  string posterURL = 9                    [json_name="poster_url" ];
+  string backgroundURL = 10               [json_name="background_url"];
+  int32 releaseYear = 11                  [json_name="release_year"];
+  string	ageRating  = 12                 [json_name="age_rating"];
 };
-
-
-message Movies {
-  map<string,Movie> movies = 1; 
-}
 
 message UserErrorMessage { string message = 1 [ json_name = "message" ]; }

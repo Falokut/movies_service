@@ -75,21 +75,20 @@ func newClient(t *testing.T, s *service.MoviesService) *grpc.ClientConn {
 }
 
 type GetMovieBehavior func(m *repo_mock.MockMoviesRepositoryManager, ctx context.Context, movieId string, expectedMovie repository.Movie)
-type GetMoviesBehavior func(m *repo_mock.MockMoviesRepositoryManager, ctx context.Context, filter repository.MoviesFilter,
-	expectedMovies []repository.Movie, limit, offset uint32)
-type GetMoviePosterURLBehavior func(s *service_mock.MockImagesService, ctx context.Context, PictureID string, expectedResponce string)
-type GetMoviePosterURLMultipleBehavior func(s *service_mock.MockImagesService, ctx context.Context, PicturesIDs []string, times int)
+type GetMoviesPreviewBehavior func(m *repo_mock.MockMoviesRepositoryManager, ctx context.Context, filter repository.MoviesFilter,
+	expectedMovies []repository.MoviePreview, limit, offset uint32)
+type GetPictureURLMultipleBehavior func(s *service_mock.MockImagesService, ctx context.Context, PicturesIDs []string, times int)
 
 func TestGetMovie(t *testing.T) {
 	testCases := []struct {
 		movieID          string
-		pictureID        string
 		behavior         GetMovieBehavior
-		imgBehavior      GetMoviePosterURLBehavior
+		imgBehavior      GetPictureURLMultipleBehavior
 		expectedStatus   codes.Code
 		expectedResponce *movies_service.Movie
 		movie            repository.Movie
 		expectedError    error
+		urlRequestTimes  int
 		msg              string
 	}{
 		{
@@ -97,8 +96,8 @@ func TestGetMovie(t *testing.T) {
 			behavior: func(m *repo_mock.MockMoviesRepositoryManager, ctx context.Context, movieId string, expectedMovie repository.Movie) {
 				m.EXPECT().GetMovie(gomock.Any(), movieId).Return(repository.Movie{}, repository.ErrNotFound).Times(1)
 			},
-			imgBehavior: func(s *service_mock.MockImagesService, ctx context.Context, PictureID string, expectedResponce string) {
-				s.EXPECT().GetMoviePosterURL(gomock.Any(), gomock.Any()).Times(0)
+			imgBehavior: func(s *service_mock.MockImagesService, ctx context.Context, PicturesIDs []string, times int) {
+				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any()).Times(times)
 			},
 			expectedStatus:   codes.NotFound,
 			expectedError:    service.ErrNotFound,
@@ -110,8 +109,8 @@ func TestGetMovie(t *testing.T) {
 			behavior: func(m *repo_mock.MockMoviesRepositoryManager, ctx context.Context, movieId string, expectedMovie repository.Movie) {
 				m.EXPECT().GetMovie(gomock.Any(), movieId).Return(repository.Movie{}, context.Canceled).Times(1)
 			},
-			imgBehavior: func(s *service_mock.MockImagesService, ctx context.Context, PictureID string, expectedResponce string) {
-				s.EXPECT().GetMoviePosterURL(gomock.Any(), gomock.Any()).Times(0)
+			imgBehavior: func(s *service_mock.MockImagesService, ctx context.Context, PicturesIDs []string, times int) {
+				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any()).Times(times)
 			},
 			expectedStatus:   codes.Internal,
 			expectedError:    service.ErrInternal,
@@ -119,63 +118,65 @@ func TestGetMovie(t *testing.T) {
 			msg:              "Test case num %d, must return internal error, if repo manager return error != ErrNotFound",
 		},
 		{
-			movieID:   "10",
-			pictureID: "1012",
+			movieID: "10",
 			movie: repository.Movie{
-				ID:          "10",
-				TitleRU:     "TitleRU",
-				PictureID:   sql.NullString{String: "1012", Valid: true},
-				Plot:        "Plot",
-				CastID:      1,
-				Duration:    100,
-				ReleaseYear: 2000,
+				ID:                  "10",
+				TitleRU:             "TitleRU",
+				PosterID:            sql.NullString{String: "1012", Valid: true},
+				BackgroundPictureID: sql.NullString{String: "1012", Valid: true},
+				Description:         "Description",
+				CastID:              1,
+				Duration:            100,
+				ReleaseYear:         2000,
 			},
 			expectedResponce: &movies_service.Movie{
-				MovieID:          "10",
-				TitleRU:          "TitleRU",
-				PosterPictureURL: "someurl",
-				Plot:             "Plot",
-				CastID:           1,
-				Duration:         100,
-				ReleaseYear:      2000,
+				TitleRU:       "TitleRU",
+				PosterURL:     "someurl",
+				BackgroundURL: "someurl",
+				Description:   "Description",
+				CastID:        1,
+				Duration:      100,
+				ReleaseYear:   2000,
 			},
 			behavior: func(m *repo_mock.MockMoviesRepositoryManager, ctx context.Context, movieId string, expectedMovie repository.Movie) {
 				m.EXPECT().GetMovie(gomock.Any(), movieId).Return(expectedMovie, nil).Times(1)
 			},
-			imgBehavior: func(s *service_mock.MockImagesService, ctx context.Context, PictureID string, expectedResponce string) {
-				s.EXPECT().GetMoviePosterURL(gomock.Any(), PictureID).Return(expectedResponce).Times(1)
+			imgBehavior: func(s *service_mock.MockImagesService, ctx context.Context, PicturesIDs []string, times int) {
+				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any()).Return("someurl").Times(times)
 			},
-			expectedStatus: codes.OK,
-			msg:            "Test case num %d, must return expected responce, if repo manager doesn't return error, service shouldn't change data, except for the link to the poster",
+			urlRequestTimes: 2,
+			expectedStatus:  codes.OK,
+			msg:             "Test case num %d, must return expected responce, if repo manager doesn't return error, service shouldn't change data, except for the link to the poster",
 		},
 		{
-			movieID:   "10",
-			pictureID: "1012",
+			movieID: "10",
 			movie: repository.Movie{
-				ID:          "10",
-				TitleRU:     "TitleRU",
-				Genres:      sql.NullString{String: "1,2,3", Valid: true},
-				PictureID:   sql.NullString{String: "1012", Valid: true},
-				Plot:        "Plot",
-				CastID:      1,
-				Duration:    100,
-				ReleaseYear: 2000,
+				ID:                  "10",
+				TitleRU:             "TitleRU",
+				Genres:              sql.NullString{String: "1,2,3", Valid: true},
+				PosterID:            sql.NullString{String: "1012", Valid: true},
+				BackgroundPictureID: sql.NullString{String: "someStr", Valid: true},
+				Description:         "ShortDescription",
+				CastID:              1,
+				Duration:            100,
+				ReleaseYear:         2000,
 			},
 			expectedResponce: &movies_service.Movie{
-				MovieID:          "10",
-				TitleRU:          "TitleRU",
-				PosterPictureURL: "someurl",
-				Plot:             "Plot",
-				GenresIDs:        []int32{1, 2, 3},
-				CastID:           1,
-				Duration:         100,
-				ReleaseYear:      2000,
+				TitleRU:       "TitleRU",
+				PosterURL:     "someurl",
+				BackgroundURL: "someurl",
+				Description:   "ShortDescription",
+				GenresIDs:     []int32{1, 2, 3},
+				CastID:        1,
+				Duration:      100,
+				ReleaseYear:   2000,
 			},
+			urlRequestTimes: 2,
 			behavior: func(m *repo_mock.MockMoviesRepositoryManager, ctx context.Context, movieId string, expectedMovie repository.Movie) {
 				m.EXPECT().GetMovie(gomock.Any(), movieId).Return(expectedMovie, nil).Times(1)
 			},
-			imgBehavior: func(s *service_mock.MockImagesService, ctx context.Context, PictureID string, expectedResponce string) {
-				s.EXPECT().GetMoviePosterURL(gomock.Any(), PictureID).Return(expectedResponce).Times(1)
+			imgBehavior: func(s *service_mock.MockImagesService, ctx context.Context, PicturesIDs []string, times int) {
+				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any()).Return("someurl").Times(times)
 			},
 			expectedStatus: codes.OK,
 			msg:            "Test case num %d, must return expected responce, if repo manager doesn't return error, service shouldn't change data, except for the link to the poster",
@@ -186,11 +187,7 @@ func TestGetMovie(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		repo := repo_mock.NewMockMoviesRepositoryManager(ctrl)
 		imgServ := service_mock.NewMockImagesService(ctrl)
-		pictureURL := ""
-		if testCase.expectedResponce != nil {
-			pictureURL = testCase.expectedResponce.PosterPictureURL
-		}
-		testCase.imgBehavior(imgServ, context.Background(), testCase.pictureID, pictureURL)
+		testCase.imgBehavior(imgServ, context.Background(), []string{testCase.movie.PosterID.String, testCase.movie.BackgroundPictureID.String}, testCase.urlRequestTimes)
 		testCase.behavior(repo, context.Background(), testCase.movieID, testCase.movie)
 
 		conn := newClient(t, service.NewMoviesService(getNullLogger(), repo, imgServ))
@@ -218,7 +215,7 @@ func TestGetMovie(t *testing.T) {
 	}
 }
 
-func TestGetMovies(t *testing.T) {
+func TestGetMoviesPreview(t *testing.T) {
 	type MoviesRequest struct {
 		MoviesIDs    string
 		GenresIDs    string
@@ -233,36 +230,36 @@ func TestGetMovies(t *testing.T) {
 		moviesIDs        []string
 		request          MoviesRequest
 		urlRequestTimes  int
-		behavior         GetMoviesBehavior
-		imgBehavior      GetMoviePosterURLMultipleBehavior
+		behavior         GetMoviesPreviewBehavior
+		imgBehavior      GetPictureURLMultipleBehavior
 		expectedStatus   codes.Code
-		expectedResponce *movies_service.Movies
-		movies           []repository.Movie
+		expectedResponce *movies_service.MoviesPreview
+		movies           []repository.MoviePreview
 		expectedError    error
 		msg              string
 	}{
 		{
 			moviesIDs: []string{"1"},
 			behavior: func(m *repo_mock.MockMoviesRepositoryManager, ctx context.Context, filter repository.MoviesFilter,
-				expectedMovies []repository.Movie, limit, offset uint32) {
-				m.EXPECT().GetMovies(gomock.Any(), filter, limit, offset).Return([]repository.Movie{}, repository.ErrNotFound).Times(1)
+				expectedMovies []repository.MoviePreview, limit, offset uint32) {
+				m.EXPECT().GetMoviesPreview(gomock.Any(), filter, limit, offset).Return([]repository.MoviePreview{}, repository.ErrNotFound).Times(1)
 			},
 			imgBehavior: func(s *service_mock.MockImagesService, ctx context.Context, PicturesIDs []string, times int) {
-				s.EXPECT().GetMoviePosterURL(gomock.Any(), gomock.Any()).Times(times)
+				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any()).Times(times)
 			},
 			expectedStatus:   codes.NotFound,
 			expectedError:    service.ErrNotFound,
 			expectedResponce: nil,
-			msg:              "Test case num %d, must return not found error, if movie not found",
+			msg:              "Test case num %d, must return not found error, if movies not found",
 		},
 		{
 			moviesIDs: []string{"1"},
 			behavior: func(m *repo_mock.MockMoviesRepositoryManager, ctx context.Context, filter repository.MoviesFilter,
-				expectedMovies []repository.Movie, limit, offset uint32) {
-				m.EXPECT().GetMovies(gomock.Any(), filter, limit, offset).Return([]repository.Movie{}, context.Canceled).Times(1)
+				expectedMovies []repository.MoviePreview, limit, offset uint32) {
+				m.EXPECT().GetMoviesPreview(gomock.Any(), filter, limit, offset).Return([]repository.MoviePreview{}, context.Canceled).Times(1)
 			},
 			imgBehavior: func(s *service_mock.MockImagesService, ctx context.Context, PicturesIDs []string, times int) {
-				s.EXPECT().GetMoviePosterURL(gomock.Any(), gomock.Any()).Times(times)
+				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any()).Times(times)
 			},
 			expectedStatus:   codes.Internal,
 			expectedError:    service.ErrInternal,
@@ -274,45 +271,40 @@ func TestGetMovies(t *testing.T) {
 			request: MoviesRequest{
 				MoviesIDs: "10,12",
 			},
-			movies: []repository.Movie{
+			movies: []repository.MoviePreview{
 				{
-					ID:          "10",
-					TitleRU:     "TitleRU",
-					Plot:        "Plot",
-					CastID:      1,
-					Duration:    100,
-					ReleaseYear: 2000,
+					ID:               "10",
+					TitleRU:          "TitleRU",
+					ShortDescription: "ShortDescription",
+					Duration:         100,
+					ReleaseYear:      2000,
 				},
 				{
-					ID:          "12",
-					TitleRU:     "TitleRU",
-					TitleEN:     sql.NullString{String: "TitleEn", Valid: true},
-					Plot:        "Plot",
-					CastID:      2,
-					Duration:    150,
-					ReleaseYear: 2200,
+					ID:               "12",
+					TitleRU:          "TitleRU",
+					TitleEN:          sql.NullString{String: "TitleEn", Valid: true},
+					PreviewPosterID:  sql.NullString{String: "validString", Valid: true},
+					ShortDescription: "ShortDescription",
+					Duration:         150,
+					ReleaseYear:      2200,
 				},
 			},
 
-			expectedResponce: &movies_service.Movies{
-				Movies: map[string]*movies_service.Movie{
+			expectedResponce: &movies_service.MoviesPreview{
+				Movies: map[string]*movies_service.MoviePreview{
 					"10": {
-						MovieID:          "10",
 						TitleRU:          "TitleRU",
-						PosterPictureURL: "",
-						Plot:             "Plot",
-						CastID:           1,
+						PreviewPosterURL: "",
+						ShortDescription: "ShortDescription",
 						Duration:         100,
 						ReleaseYear:      2000,
 					},
 
 					"12": {
-						MovieID:          "12",
 						TitleEN:          "TitleEn",
 						TitleRU:          "TitleRU",
-						PosterPictureURL: "",
-						Plot:             "Plot",
-						CastID:           2,
+						PreviewPosterURL: "",
+						ShortDescription: "ShortDescription",
 						Duration:         150,
 						ReleaseYear:      2200,
 					},
@@ -320,11 +312,11 @@ func TestGetMovies(t *testing.T) {
 			},
 			urlRequestTimes: 2,
 			behavior: func(m *repo_mock.MockMoviesRepositoryManager, ctx context.Context, filter repository.MoviesFilter,
-				expectedMovies []repository.Movie, limit, offset uint32) {
-				m.EXPECT().GetMovies(gomock.Any(), filter, limit, offset).Return(expectedMovies, nil).Times(1)
+				expectedMovies []repository.MoviePreview, limit, offset uint32) {
+				m.EXPECT().GetMoviesPreview(gomock.Any(), filter, limit, offset).Return(expectedMovies, nil).Times(1)
 			},
 			imgBehavior: func(s *service_mock.MockImagesService, ctx context.Context, PicturesIDs []string, times int) {
-				s.EXPECT().GetMoviePosterURL(gomock.Any(), gomock.Any()).Return("").Times(times)
+				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any()).Return("").Times(times)
 			},
 			expectedStatus: codes.OK,
 			msg:            "Test case num %d, must return expected responce, if repo manager doesn't return error, service shouldn't change data, except for the link to the poster",
@@ -332,11 +324,11 @@ func TestGetMovies(t *testing.T) {
 		{
 			moviesIDs: []string{"1"},
 			behavior: func(m *repo_mock.MockMoviesRepositoryManager, ctx context.Context, filter repository.MoviesFilter,
-				expectedMovies []repository.Movie, limit, offset uint32) {
-				m.EXPECT().GetMovies(gomock.Any(), filter, limit, offset).Return([]repository.Movie{}, context.Canceled).Times(1)
+				expectedMovies []repository.MoviePreview, limit, offset uint32) {
+				m.EXPECT().GetMoviesPreview(gomock.Any(), filter, limit, offset).Return([]repository.MoviePreview{}, context.Canceled).Times(1)
 			},
 			imgBehavior: func(s *service_mock.MockImagesService, ctx context.Context, PicturesIDs []string, times int) {
-				s.EXPECT().GetMoviePosterURL(gomock.Any(), gomock.Any()).Times(times)
+				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any()).Times(times)
 			},
 			expectedStatus:   codes.Internal,
 			expectedError:    service.ErrInternal,
@@ -352,15 +344,15 @@ func TestGetMovies(t *testing.T) {
 				Limit:       110,
 			},
 
-			movies:           []repository.Movie{},
+			movies:           []repository.MoviePreview{},
 			expectedResponce: nil,
 			urlRequestTimes:  0,
 			behavior: func(m *repo_mock.MockMoviesRepositoryManager, ctx context.Context, filter repository.MoviesFilter,
-				expectedMovies []repository.Movie, limit, offset uint32) {
-				m.EXPECT().GetMovies(gomock.Any(), filter, limit, offset).Return(expectedMovies, nil).Times(1)
+				expectedMovies []repository.MoviePreview, limit, offset uint32) {
+				m.EXPECT().GetMoviesPreview(gomock.Any(), filter, limit, offset).Return(expectedMovies, nil).Times(1)
 			},
 			imgBehavior: func(s *service_mock.MockImagesService, ctx context.Context, PicturesIDs []string, times int) {
-				s.EXPECT().GetMoviePosterURL(gomock.Any(), gomock.Any()).Return("").Times(times)
+				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any()).Return("").Times(times)
 			},
 			expectedStatus: codes.NotFound,
 			expectedError:  service.ErrNotFound,
@@ -369,50 +361,42 @@ func TestGetMovies(t *testing.T) {
 		},
 
 		{
-			moviesIDs: []string{"10", "12"},
+			moviesIDs: []string{"10", "120"},
 			request: MoviesRequest{
-				MoviesIDs: "10,12",
+				MoviesIDs: "10,120",
 				Limit:     110,
 			},
-			movies: []repository.Movie{
+			movies: []repository.MoviePreview{
 				{
-					ID:          "120",
-					TitleRU:     "TitleRU",
-					Plot:        "Plot",
-					CastID:      1,
-					Duration:    100,
-					ReleaseYear: 2000,
+					ID:               "120",
+					TitleRU:          "TitleRU",
+					ShortDescription: "ShortDescription",
+					Duration:         100,
+					ReleaseYear:      2000,
 				},
 				{
-					ID:          "12",
-					TitleRU:     "TitleRU",
-					TitleEN:     sql.NullString{String: "TitleEn", Valid: true},
-					Plot:        "Plot",
-					CastID:      2,
-					Duration:    150,
-					ReleaseYear: 2200,
+					ID:               "12",
+					TitleRU:          "TitleRU",
+					TitleEN:          sql.NullString{String: "TitleEn", Valid: true},
+					ShortDescription: "ShortDescription",
+					Duration:         150,
+					ReleaseYear:      2200,
 				},
 			},
 
-			expectedResponce: &movies_service.Movies{
-				Movies: map[string]*movies_service.Movie{
+			expectedResponce: &movies_service.MoviesPreview{
+				Movies: map[string]*movies_service.MoviePreview{
 					"120": {
-						MovieID:          "120",
 						TitleRU:          "TitleRU",
-						PosterPictureURL: "",
-						Plot:             "Plot",
-						CastID:           1,
+						ShortDescription: "ShortDescription",
 						Duration:         100,
 						ReleaseYear:      2000,
 					},
 
 					"12": {
-						MovieID:          "12",
 						TitleEN:          "TitleEn",
 						TitleRU:          "TitleRU",
-						PosterPictureURL: "",
-						Plot:             "Plot",
-						CastID:           2,
+						ShortDescription: "ShortDescription",
 						Duration:         150,
 						ReleaseYear:      2200,
 					},
@@ -420,11 +404,11 @@ func TestGetMovies(t *testing.T) {
 			},
 			urlRequestTimes: 2,
 			behavior: func(m *repo_mock.MockMoviesRepositoryManager, ctx context.Context, filter repository.MoviesFilter,
-				expectedMovies []repository.Movie, limit, offset uint32) {
-				m.EXPECT().GetMovies(gomock.Any(), filter, limit, offset).Return(expectedMovies, nil).Times(1)
+				expectedMovies []repository.MoviePreview, limit, offset uint32) {
+				m.EXPECT().GetMoviesPreview(gomock.Any(), filter, limit, offset).Return(expectedMovies, nil).Times(1)
 			},
 			imgBehavior: func(s *service_mock.MockImagesService, ctx context.Context, PicturesIDs []string, times int) {
-				s.EXPECT().GetMoviePosterURL(gomock.Any(), gomock.Any()).Return("").Times(times)
+				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any()).Return("").Times(times)
 			},
 			expectedStatus: codes.OK,
 			msg: "Test case num %d, must return expected responce, limit should be in [10,100]," +
@@ -435,56 +419,49 @@ func TestGetMovies(t *testing.T) {
 			request: MoviesRequest{
 				MoviesIDs: "10-,2-12",
 			},
-			movies: []repository.Movie{
+			movies: []repository.MoviePreview{
 				{
-					ID:          "10",
-					TitleRU:     "TitleRU",
-					Plot:        "Plot",
-					CastID:      1,
-					Duration:    100,
-					ReleaseYear: 2000,
+					ID:               "10",
+					TitleRU:          "TitleRU",
+					ShortDescription: "ShortDescription",
+					Duration:         100,
+					ReleaseYear:      2000,
 				},
 				{
-					ID:          "12",
-					TitleRU:     "TitleRU",
-					TitleEN:     sql.NullString{String: "TitleEn", Valid: true},
-					Plot:        "Plot",
-					CastID:      2,
-					Duration:    150,
-					ReleaseYear: 2200,
+					ID:               "12",
+					TitleRU:          "TitleRU",
+					TitleEN:          sql.NullString{String: "TitleEn", Valid: true},
+					ShortDescription: "ShortDescription",
+					Duration:         150,
+					ReleaseYear:      2200,
 				},
 			},
 
-			expectedResponce: &movies_service.Movies{
-				Movies: map[string]*movies_service.Movie{
+			expectedResponce: &movies_service.MoviesPreview{
+				Movies: map[string]*movies_service.MoviePreview{
 					"10": {
-						MovieID:          "10",
 						TitleRU:          "TitleRU",
-						PosterPictureURL: "",
-						Plot:             "Plot",
-						CastID:           1,
+						PreviewPosterURL: "",
+						ShortDescription: "ShortDescription",
 						Duration:         100,
 						ReleaseYear:      2000,
 					},
 
 					"12": {
-						MovieID:          "12",
 						TitleEN:          "TitleEn",
-						TitleRU:          "TitleRU",
-						PosterPictureURL: "",
-						Plot:             "Plot",
-						CastID:           2,
+						PreviewPosterURL: "TitleRU",
+						ShortDescription: "ShortDescription",
 						Duration:         150,
 						ReleaseYear:      2200,
 					},
 				},
 			},
 			behavior: func(m *repo_mock.MockMoviesRepositoryManager, ctx context.Context, filter repository.MoviesFilter,
-				expectedMovies []repository.Movie, limit, offset uint32) {
-				m.EXPECT().GetMovies(gomock.Any(), filter, limit, offset).Return(expectedMovies, nil).Times(0)
+				expectedMovies []repository.MoviePreview, limit, offset uint32) {
+				m.EXPECT().GetMoviesPreview(gomock.Any(), filter, limit, offset).Return(expectedMovies, nil).Times(0)
 			},
 			imgBehavior: func(s *service_mock.MockImagesService, ctx context.Context, PicturesIDs []string, times int) {
-				s.EXPECT().GetMoviePosterURL(gomock.Any(), gomock.Any()).Return("").Times(times)
+				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any()).Return("").Times(times)
 			},
 			expectedStatus: codes.InvalidArgument,
 			expectedError:  service.ErrInvalidFilter,
@@ -499,7 +476,7 @@ func TestGetMovies(t *testing.T) {
 
 		var picturesIds = make([]string, 0, len(testCase.movies))
 		for _, movie := range testCase.movies {
-			picturesIds = append(picturesIds, movie.PictureID.String)
+			picturesIds = append(picturesIds, movie.PreviewPosterID.String)
 		}
 		testCase.imgBehavior(imgServ, context.Background(), picturesIds, testCase.urlRequestTimes)
 		var limit = testCase.request.Limit
@@ -523,15 +500,16 @@ func TestGetMovies(t *testing.T) {
 		client := movies_service.NewMoviesServiceV1Client(conn)
 		assert.NotNil(t, client)
 
-		res, err := client.GetMovies(context.Background(), &movies_service.GetMoviesRequest{
-			MoviesIDs:    &testCase.request.MoviesIDs,
-			GenresIDs:    &testCase.request.GenresIDs,
-			DirectorsIDs: &testCase.request.DiretorsIDs,
-			CountriesIDs: &testCase.request.CountriesIDs,
-			Title:        &testCase.request.Title,
-			Limit:        testCase.request.Limit,
-			Offset:       testCase.request.Offset,
-		})
+		res, err := client.GetMoviesPreview(context.Background(),
+			&movies_service.GetMoviesPreviewRequest{
+				MoviesIDs:    &testCase.request.MoviesIDs,
+				GenresIDs:    &testCase.request.GenresIDs,
+				DirectorsIDs: &testCase.request.DiretorsIDs,
+				CountriesIDs: &testCase.request.CountriesIDs,
+				Title:        &testCase.request.Title,
+				Limit:        testCase.request.Limit,
+				Offset:       testCase.request.Offset,
+			})
 
 		testCase.msg = fmt.Sprintf(testCase.msg, i+1)
 		if testCase.expectedError != nil {
@@ -541,7 +519,7 @@ func TestGetMovies(t *testing.T) {
 		} else if assert.NotNil(t, res) && assert.Equal(t, len(testCase.expectedResponce.Movies), len(res.Movies)) {
 			var comp assert.Comparison = func() (success bool) {
 				for key, Expectedmovie := range testCase.expectedResponce.Movies {
-					if !isProtoMoviesEqual(t, Expectedmovie, res.Movies[key]) {
+					if !isProtoMoviesPreviewEqual(t, Expectedmovie, res.Movies[key]) {
 						return false
 					}
 				}
@@ -553,6 +531,23 @@ func TestGetMovies(t *testing.T) {
 	}
 }
 
+func isProtoMoviesPreviewEqual(t *testing.T, expected, result *movies_service.MoviePreview) bool {
+	if expected == nil && result == nil {
+		return true
+	} else if expected == nil && result != nil ||
+		expected != nil && result == nil {
+		return false
+	}
+	return assert.Equal(t, expected.ShortDescription, result.ShortDescription, "short descriptions not equals") &&
+		assert.Equal(t, expected.TitleRU, result.TitleRU, "ru titles not equals") &&
+		assert.Equal(t, expected.TitleEN, result.TitleEN, "en titles not equals") &&
+		assert.Equal(t, expected.GenresIDs, result.GenresIDs, "genres ids not equals") &&
+		assert.Equal(t, expected.Duration, result.Duration, "duration not equals") &&
+		assert.Equal(t, expected.CountriesIDs, result.CountriesIDs, "countries ids not equals") &&
+		assert.Equal(t, expected.PreviewPosterURL, result.PreviewPosterURL, "preview posters urls not equals") &&
+		assert.Equal(t, expected.ReleaseYear, result.ReleaseYear, "release years not equals")
+}
+
 func isProtoMoviesEqual(t *testing.T, expected, result *movies_service.Movie) bool {
 	if expected == nil && result == nil {
 		return true
@@ -560,16 +555,15 @@ func isProtoMoviesEqual(t *testing.T, expected, result *movies_service.Movie) bo
 		expected != nil && result == nil {
 		return false
 	}
-	return assert.Equal(t, expected.MovieID, result.MovieID, "movies id not equal") &&
-		assert.Equal(t, expected.Plot, result.Plot, "plots not equals") &&
+	return assert.Equal(t, expected.Description, result.Description, "descriptions not equals") &&
 		assert.Equal(t, expected.TitleRU, result.TitleRU, "ru titles not equals") &&
 		assert.Equal(t, expected.TitleEN, result.TitleEN, "en titles not equals") &&
-		assert.Equal(t, expected.Budget, result.Budget, "budgets not equals") &&
 		assert.Equal(t, expected.CastID, result.CastID, "casts ids not equals") &&
 		assert.Equal(t, expected.GenresIDs, result.GenresIDs, "genres ids not equals") &&
 		assert.Equal(t, expected.DirectorsIDs, result.DirectorsIDs, "directors ids not equals") &&
 		assert.Equal(t, expected.Duration, result.Duration, "duration not equals") &&
 		assert.Equal(t, expected.CountriesIDs, result.CountriesIDs, "countries ids not equals") &&
-		assert.Equal(t, expected.PosterPictureURL, result.PosterPictureURL, "posters urls not equals") &&
+		assert.Equal(t, expected.PosterURL, result.PosterURL, "posters urls not equals") &&
+		assert.Equal(t, expected.BackgroundURL, result.BackgroundURL, "backgrounds not equals") &&
 		assert.Equal(t, expected.ReleaseYear, result.ReleaseYear, "release years not equals")
 }

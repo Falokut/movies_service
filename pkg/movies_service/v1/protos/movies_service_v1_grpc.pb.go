@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -23,7 +24,8 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MoviesServiceV1Client interface {
 	GetMovie(ctx context.Context, in *GetMovieRequest, opts ...grpc.CallOption) (*Movie, error)
-	GetMovies(ctx context.Context, in *GetMoviesRequest, opts ...grpc.CallOption) (*Movies, error)
+	GetMoviesPreview(ctx context.Context, in *GetMoviesPreviewRequest, opts ...grpc.CallOption) (*MoviesPreview, error)
+	GetAgeRatings(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*AgeRatings, error)
 }
 
 type moviesServiceV1Client struct {
@@ -43,9 +45,18 @@ func (c *moviesServiceV1Client) GetMovie(ctx context.Context, in *GetMovieReques
 	return out, nil
 }
 
-func (c *moviesServiceV1Client) GetMovies(ctx context.Context, in *GetMoviesRequest, opts ...grpc.CallOption) (*Movies, error) {
-	out := new(Movies)
-	err := c.cc.Invoke(ctx, "/movies_service.moviesServiceV1/GetMovies", in, out, opts...)
+func (c *moviesServiceV1Client) GetMoviesPreview(ctx context.Context, in *GetMoviesPreviewRequest, opts ...grpc.CallOption) (*MoviesPreview, error) {
+	out := new(MoviesPreview)
+	err := c.cc.Invoke(ctx, "/movies_service.moviesServiceV1/GetMoviesPreview", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *moviesServiceV1Client) GetAgeRatings(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*AgeRatings, error) {
+	out := new(AgeRatings)
+	err := c.cc.Invoke(ctx, "/movies_service.moviesServiceV1/GetAgeRatings", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +68,8 @@ func (c *moviesServiceV1Client) GetMovies(ctx context.Context, in *GetMoviesRequ
 // for forward compatibility
 type MoviesServiceV1Server interface {
 	GetMovie(context.Context, *GetMovieRequest) (*Movie, error)
-	GetMovies(context.Context, *GetMoviesRequest) (*Movies, error)
+	GetMoviesPreview(context.Context, *GetMoviesPreviewRequest) (*MoviesPreview, error)
+	GetAgeRatings(context.Context, *emptypb.Empty) (*AgeRatings, error)
 	mustEmbedUnimplementedMoviesServiceV1Server()
 }
 
@@ -68,8 +80,11 @@ type UnimplementedMoviesServiceV1Server struct {
 func (UnimplementedMoviesServiceV1Server) GetMovie(context.Context, *GetMovieRequest) (*Movie, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetMovie not implemented")
 }
-func (UnimplementedMoviesServiceV1Server) GetMovies(context.Context, *GetMoviesRequest) (*Movies, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetMovies not implemented")
+func (UnimplementedMoviesServiceV1Server) GetMoviesPreview(context.Context, *GetMoviesPreviewRequest) (*MoviesPreview, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetMoviesPreview not implemented")
+}
+func (UnimplementedMoviesServiceV1Server) GetAgeRatings(context.Context, *emptypb.Empty) (*AgeRatings, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAgeRatings not implemented")
 }
 func (UnimplementedMoviesServiceV1Server) mustEmbedUnimplementedMoviesServiceV1Server() {}
 
@@ -102,20 +117,38 @@ func _MoviesServiceV1_GetMovie_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
-func _MoviesServiceV1_GetMovies_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetMoviesRequest)
+func _MoviesServiceV1_GetMoviesPreview_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetMoviesPreviewRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MoviesServiceV1Server).GetMovies(ctx, in)
+		return srv.(MoviesServiceV1Server).GetMoviesPreview(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/movies_service.moviesServiceV1/GetMovies",
+		FullMethod: "/movies_service.moviesServiceV1/GetMoviesPreview",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MoviesServiceV1Server).GetMovies(ctx, req.(*GetMoviesRequest))
+		return srv.(MoviesServiceV1Server).GetMoviesPreview(ctx, req.(*GetMoviesPreviewRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MoviesServiceV1_GetAgeRatings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MoviesServiceV1Server).GetAgeRatings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/movies_service.moviesServiceV1/GetAgeRatings",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MoviesServiceV1Server).GetAgeRatings(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -132,8 +165,12 @@ var MoviesServiceV1_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _MoviesServiceV1_GetMovie_Handler,
 		},
 		{
-			MethodName: "GetMovies",
-			Handler:    _MoviesServiceV1_GetMovies_Handler,
+			MethodName: "GetMoviesPreview",
+			Handler:    _MoviesServiceV1_GetMoviesPreview_Handler,
+		},
+		{
+			MethodName: "GetAgeRatings",
+			Handler:    _MoviesServiceV1_GetAgeRatings_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
