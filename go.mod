@@ -4,7 +4,7 @@ go 1.21.4
 
 require (
 	github.com/Falokut/grpc_errors v1.0.0
-	github.com/Falokut/grpc_rest_server v1.0.1
+	github.com/Falokut/grpc_rest_server v1.0.3
 	github.com/Falokut/healthcheck v0.0.0-20231124155013-bff54f9bc002
 	github.com/Falokut/online_cinema_ticket_office.loggerwrapper v0.0.0-20231130151717-09aa21496f83
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.18.1
@@ -28,7 +28,7 @@ require (
 
 require (
 	github.com/BurntSushi/toml v1.2.1 // indirect
-	github.com/Falokut/interceptors v1.0.1 // indirect
+	github.com/Falokut/interceptors v1.0.2 // indirect
 	github.com/HdrHistogram/hdrhistogram-go v1.1.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect

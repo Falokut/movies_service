@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/Falokut/grpc_errors"
+	"github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/ext"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -30,6 +32,16 @@ func newErrorHandler(logger *logrus.Logger) errorHandler {
 	return errorHandler{
 		logger: logger,
 	}
+}
+
+func (e *errorHandler) createErrorResponceWithSpan(span opentracing.Span, err error, developerMessage string) error {
+	if err == nil {
+		return nil
+	}
+
+	span.SetTag("grpc.status", grpc_errors.GetGrpcCode(err))
+	ext.LogError(span, err)
+	return e.createErrorResponce(err, developerMessage)
 }
 
 func (e *errorHandler) createErrorResponce(err error, developerMessage string) error {

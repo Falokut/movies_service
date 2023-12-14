@@ -7,11 +7,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Falokut/grpc_errors"
 	"github.com/Falokut/movies_service/internal/repository"
 	movies_service "github.com/Falokut/movies_service/pkg/movies_service/v1/protos"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -42,42 +42,39 @@ func NewMoviesService(logger *logrus.Logger, repoManager repository.MoviesReposi
 func (s *MoviesService) GetMovie(ctx context.Context, in *movies_service.GetMovieRequest) (*movies_service.Movie, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "MoviesService.GetMovie")
 	defer span.Finish()
-	var err error
-	defer span.SetTag("grpc.status", grpc_errors.GetGrpcCode(err))
+
 	movie, err := s.repoManager.GetMovie(ctx, in.MovieID)
 	if errors.Is(err, repository.ErrNotFound) {
-		return nil, s.errorHandler.createErrorResponce(ErrNotFound, "")
+		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrNotFound, "")
 	}
 	if err != nil {
-		return nil, s.errorHandler.createErrorResponce(ErrInternal, err.Error())
+		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrInternal, err.Error())
 	}
 
+	span.SetTag("grpc.status", codes.OK)
 	return s.convertDbMovieToProto(ctx, movie), nil
 }
 
 func (s *MoviesService) GetAgeRatings(ctx context.Context, in *emptypb.Empty) (*movies_service.AgeRatings, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "MoviesService.GetAgeRatings")
 	defer span.Finish()
-	var err error
-	defer span.SetTag("grpc.status", grpc_errors.GetGrpcCode(err))
+
 	ratings, err := s.repoManager.GetAgeRatings(ctx)
 	if err != nil {
-		err = s.errorHandler.createErrorResponce(ErrInternal, err.Error())
-		return nil, err
+		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrInternal, err.Error())
 	}
 
+	span.SetTag("grpc.status", codes.OK)
 	return &movies_service.AgeRatings{Ratings: ratings}, nil
 }
 
 func (s *MoviesService) GetMoviesPreview(ctx context.Context, in *movies_service.GetMoviesPreviewRequest) (*movies_service.MoviesPreview, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "MoviesService.GetMoviesPreview")
 	defer span.Finish()
-	var err error
-	defer span.SetTag("grpc.status", grpc_errors.GetGrpcCode(err))
 
-	err = validateFilter(in)
+	err := validateFilter(in)
 	if errors.Is(err, ErrInvalidFilter) {
-		return nil, s.errorHandler.createErrorResponce(ErrInvalidArgument, err.Error())
+		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrInvalidArgument, err.Error())
 	}
 
 	filter := repository.MoviesFilter{
@@ -97,20 +94,20 @@ func (s *MoviesService) GetMoviesPreview(ctx context.Context, in *movies_service
 
 	Movies, err := s.repoManager.GetMoviesPreview(ctx, filter, in.Limit, in.Offset)
 	if errors.Is(err, repository.ErrNotFound) {
-		return nil, s.errorHandler.createErrorResponce(ErrNotFound, "")
+		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrNotFound, "")
 	}
 	if err != nil {
-		return nil, s.errorHandler.createErrorResponce(ErrInternal, err.Error())
+		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrInternal, err.Error())
 	}
 	if len(Movies) == 0 {
-		return nil, s.errorHandler.createErrorResponce(ErrNotFound, "")
+		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrNotFound, "")
 	}
-
 	movies := make(map[string]*movies_service.MoviePreview, len(Movies))
 	for _, movie := range Movies {
 		movies[movie.ID] = s.convertDbMoviePreviewToProto(ctx, movie)
 	}
 
+	span.SetTag("grpc.status", codes.OK)
 	return &movies_service.MoviesPreview{Movies: movies}, nil
 }
 func GetAgeRatingsFilter(ageRating string) string {
