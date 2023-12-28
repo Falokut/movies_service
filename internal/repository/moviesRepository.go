@@ -45,11 +45,12 @@ func (r *moviesRepository) GetMovie(ctx context.Context, movieId string) (Movie,
 	span, ctx := opentracing.StartSpanFromContext(ctx, "moviesRepository.GetMovie")
 	defer span.Finish()
 	var err error
-	defer span.SetTag("has_errors", err != nil)
+	defer span.SetTag("error", err != nil)
 
-	query := fmt.Sprintf("SELECT id, title_ru, title_en,"+
-		"description, genres, cast_id, duration, poster_picture_id,"+
-		"background_picture_id, directors, countries, release_year, age_rating FROM %s WHERE id=$1", moviesTableName)
+	query := fmt.Sprintf("SELECT %[1]s.id, title_ru, title_en,"+
+		"description, genres, duration, poster_picture_id,"+
+		"background_picture_id, directors, countries, release_year, COALESCE(%[2]s.name,'') AS age_rating "+
+		" FROM %[1]s LEFT JOIN %[2]s ON age_rating_id=%[2]s.id WHERE %[1]s.id=$1", moviesTableName, ageRatingsTableName)
 	var movie Movie
 	err = r.db.GetContext(ctx, &movie, query, movieId)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -67,7 +68,7 @@ func (r *moviesRepository) GetMoviesPreview(ctx context.Context, filter MoviesFi
 	defer span.Finish()
 
 	var err error
-	defer span.SetTag("has_errors", err != nil)
+	defer span.SetTag("error", err != nil)
 
 	query := fmt.Sprintf("SELECT id FROM %s %s ORDER BY id LIMIT %d OFFSET %d;", moviesTableName,
 		convertFilterToWhere(filter), limit, offset)
@@ -88,7 +89,7 @@ func (r *moviesRepository) GetAgeRatings(ctx context.Context) ([]string, error) 
 	span, ctx := opentracing.StartSpanFromContext(ctx, "moviesRepository.GetAgeRatings")
 	defer span.Finish()
 	var err error
-	defer span.SetTag("has_errors", err != nil)
+	defer span.SetTag("error", err != nil)
 
 	query := fmt.Sprintf("SELECT name FROM %s", ageRatingsTableName)
 	var ratings = []string{}
@@ -114,12 +115,12 @@ func convertFilterToWhere(filter MoviesFilter) string {
 	str, first = arrayContains("directors", filter.DirectorsIDs, first)
 	statement += str
 
-	str, first = containsInArray("age_rating", filter.AgeRating, first)
+	str, first = containsInArray(ageRatingsTableName+".name", filter.AgeRating, first)
 	statement += str
 
 	if filter.Title != "" {
-		filter.Title = strings.ReplaceAll(strings.ToLower(filter.Title), "'", "''")
-		str = fmt.Sprintf(" LOWER(title_ru) LIKE('%[1]s%[2]s') OR LOWER(title_en) LIKE('%[1]s%[2]s')", filter.Title, "%")
+		filter.Title = strings.ReplaceAll(strings.ToLower(filter.Title), "'", "''") + "%"
+		str = fmt.Sprintf(" LOWER(title_ru) LIKE('%[1]s') OR LOWER(title_en) LIKE('%[1]s')", filter.Title)
 		if !first {
 			statement += " AND " + str
 		} else {
@@ -162,10 +163,11 @@ func (r *moviesRepository) GetMoviePreview(ctx context.Context, movieId string) 
 	defer span.Finish()
 
 	var err error
-	defer span.SetTag("has_errors", err != nil)
+	defer span.SetTag("error", err != nil)
 
-	query := fmt.Sprintf("SELECT id, title_ru, title_en, duration, preview_poster_picture_id,"+
-		"genres, short_description, countries, release_year, age_rating FROM %s WHERE id=$1", moviesTableName)
+	query := fmt.Sprintf("SELECT %[1]s.id, title_ru, title_en, duration, preview_poster_picture_id,"+
+		"genres, short_description, countries, release_year, COALESCE(%[2]s.name,'') AS age_rating "+
+		" FROM %[1]s LEFT JOIN %[2]s ON age_rating_id=%[2]s.id WHERE %[1]s.id=$1", moviesTableName, ageRatingsTableName)
 	var movie MoviePreview
 	err = r.db.GetContext(ctx, &movie, query, movieId)
 	if errors.Is(err, sql.ErrNoRows) {

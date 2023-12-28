@@ -123,7 +123,6 @@ func (c *moviesCache) CacheMovies(ctx context.Context, movies []Movie, ttl time.
 		tx.Set(ctx, fmt.Sprint(movie.ID), toCache, ttl)
 	}
 	_, err := tx.Exec(ctx)
-
 	return err
 }
 
@@ -152,7 +151,6 @@ type cachedMovie struct {
 	TitleEN             string `json:"title_en"`
 	Description         string `json:"description"`
 	Genres              string `json:"genres"`
-	CastID              int32  `json:"cast_id"`
 	Duration            int32  `json:"duration"`
 	PosterID            string `json:"poster_picture_id"`
 	BackgroundPictureID string `json:"background_picture_id"`
@@ -169,7 +167,6 @@ func convertMovieToCacheMovie(movie Movie) cachedMovie {
 		TitleEN:             movie.TitleEN.String,
 		Description:         movie.Description,
 		Genres:              movie.Genres.String,
-		CastID:              movie.CastID,
 		Duration:            movie.Duration,
 		PosterID:            movie.PosterID.String,
 		BackgroundPictureID: movie.BackgroundPictureID.String,
@@ -187,7 +184,6 @@ func convertCacheMovieToMovie(movie cachedMovie) Movie {
 		TitleEN:      sql.NullString{String: movie.TitleEN, Valid: true},
 		Description:  movie.Description,
 		Genres:       sql.NullString{String: movie.Genres, Valid: true},
-		CastID:       movie.CastID,
 		Duration:     movie.Duration,
 		PosterID:     sql.NullString{String: movie.PosterID, Valid: true},
 		DirectorsIDs: sql.NullString{String: movie.DiretorsIDs, Valid: true},

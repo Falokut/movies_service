@@ -44,16 +44,15 @@ message Movie {
   string description = 1;
   string titleRU = 2                      [json_name="title_ru"];
   string titleEN = 3                      [json_name="title_en"];
-  int32 castID = 4                        [json_name="cast_id" ];
-  repeated int32 genresIDs = 5            [json_name="genres_ids"];
-  repeated int32 directorsIDs = 6         [json_name="directors_ids"];
+  repeated int32 genresIDs = 4            [json_name="genres_ids"];
+  repeated int32 directorsIDs = 5         [json_name="directors_ids"];
   // movie duration in minutes
-  int32 duration = 7;
-  repeated int32 countriesIDs = 8         [json_name="country_ids"];
-  string posterURL = 9                    [json_name="poster_url" ];
-  string backgroundURL = 10               [json_name="background_url"];
-  int32 releaseYear = 11                  [json_name="release_year"];
-  string	ageRating  = 12                 [json_name="age_rating"];
+  int32 duration = 6;
+  repeated int32 countriesIDs = 7         [json_name="country_ids"];
+  string posterURL = 8                    [json_name="poster_url" ];
+  string backgroundURL = 9               [json_name="background_url"];
+  int32 releaseYear = 10                  [json_name="release_year"];
+  string	ageRating  = 11                 [json_name="age_rating"];
 };
 
 message UserErrorMessage { string message = 1 [ json_name = "message" ]; }

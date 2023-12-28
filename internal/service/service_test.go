@@ -125,7 +125,6 @@ func TestGetMovie(t *testing.T) {
 				PosterID:            sql.NullString{String: "1012", Valid: true},
 				BackgroundPictureID: sql.NullString{String: "1012", Valid: true},
 				Description:         "Description",
-				CastID:              1,
 				Duration:            100,
 				ReleaseYear:         2000,
 			},
@@ -134,7 +133,6 @@ func TestGetMovie(t *testing.T) {
 				PosterURL:     "someurl",
 				BackgroundURL: "someurl",
 				Description:   "Description",
-				CastID:        1,
 				Duration:      100,
 				ReleaseYear:   2000,
 			},
@@ -157,7 +155,6 @@ func TestGetMovie(t *testing.T) {
 				PosterID:            sql.NullString{String: "1012", Valid: true},
 				BackgroundPictureID: sql.NullString{String: "someStr", Valid: true},
 				Description:         "ShortDescription",
-				CastID:              1,
 				Duration:            100,
 				ReleaseYear:         2000,
 			},
@@ -167,7 +164,6 @@ func TestGetMovie(t *testing.T) {
 				BackgroundURL: "someurl",
 				Description:   "ShortDescription",
 				GenresIDs:     []int32{1, 2, 3},
-				CastID:        1,
 				Duration:      100,
 				ReleaseYear:   2000,
 			},
@@ -558,7 +554,6 @@ func isProtoMoviesEqual(t *testing.T, expected, result *movies_service.Movie) bo
 	return assert.Equal(t, expected.Description, result.Description, "descriptions not equals") &&
 		assert.Equal(t, expected.TitleRU, result.TitleRU, "ru titles not equals") &&
 		assert.Equal(t, expected.TitleEN, result.TitleEN, "en titles not equals") &&
-		assert.Equal(t, expected.CastID, result.CastID, "casts ids not equals") &&
 		assert.Equal(t, expected.GenresIDs, result.GenresIDs, "genres ids not equals") &&
 		assert.Equal(t, expected.DirectorsIDs, result.DirectorsIDs, "directors ids not equals") &&
 		assert.Equal(t, expected.Duration, result.Duration, "duration not equals") &&

@@ -28,7 +28,6 @@ type Movie struct {
 	TitleEN             sql.NullString `db:"title_en"`
 	Description         string         `db:"description"`
 	Genres              sql.NullString `db:"genres"`
-	CastID              int32          `db:"cast_id"`
 	Duration            int32          `db:"duration"`
 	PosterID            sql.NullString `db:"poster_picture_id"`
 	BackgroundPictureID sql.NullString `db:"background_picture_id"`

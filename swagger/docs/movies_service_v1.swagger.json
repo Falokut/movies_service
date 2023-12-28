@@ -212,10 +212,6 @@
         "title_en": {
           "type": "string"
         },
-        "cast_id": {
-          "type": "integer",
-          "format": "int32"
-        },
         "genres_ids": {
           "type": "array",
           "items": {

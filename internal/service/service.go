@@ -139,7 +139,6 @@ func (s *MoviesService) convertDbMovieToProto(ctx context.Context, movie reposit
 		Description:   movie.Description,
 		TitleRU:       movie.TitleRU,
 		TitleEN:       movie.TitleEN.String,
-		CastID:        movie.CastID,
 		GenresIDs:     s.intSliceFromString(movie.Genres.String),
 		DirectorsIDs:  s.intSliceFromString(movie.DirectorsIDs.String),
 		Duration:      movie.Duration,
