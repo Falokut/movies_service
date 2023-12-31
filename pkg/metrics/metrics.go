@@ -12,8 +12,8 @@ import (
 )
 
 type Metrics interface {
-	IncCacheHits(method string)
-	IncCacheMiss(method string)
+	IncCacheHits(method string, times int32)
+	IncCacheMiss(method string, times int32)
 	IncHits(status int, method, path string)
 	ObserveResponseTime(status int, method, path string, observeTime float64)
 }
@@ -26,7 +26,7 @@ type PrometheusMetrics struct {
 	Times     *prometheus.HistogramVec
 }
 
-func CreateMetrics(name string) (Metrics, error) {
+func CreateMetrics(name string) (*PrometheusMetrics, error) {
 	var metr PrometheusMetrics
 	metr.HitsTotal = prometheus.NewCounter(prometheus.CounterOpts{
 		Name: name + "_hits_total",
@@ -105,12 +105,12 @@ func (metr *PrometheusMetrics) IncHits(status int, method, path string) {
 	metr.Hits.WithLabelValues(strconv.Itoa(status), method, path).Inc()
 }
 
-func (metr *PrometheusMetrics) IncCacheHits(method string) {
-	metr.CacheHits.WithLabelValues(method).Inc()
+func (metr *PrometheusMetrics) IncCacheHits(method string, times int32) {
+	metr.CacheHits.WithLabelValues(method).Add(float64(times))
 }
 
-func (metr *PrometheusMetrics) IncCacheMiss(method string) {
-	metr.CacheMiss.WithLabelValues(method).Inc()
+func (metr *PrometheusMetrics) IncCacheMiss(method string, times int32) {
+	metr.CacheMiss.WithLabelValues(method).Add(float64(times))
 }
 
 func (metr *PrometheusMetrics) ObserveResponseTime(status int, method, path string, observeTime float64) {

@@ -58,6 +58,74 @@
         ]
       }
     },
+    "/v1/countries": {
+      "get": {
+        "operationId": "moviesServiceV1_GetCountries",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/movies_serviceCountries"
+            }
+          },
+          "404": {
+            "description": "Returned when the resource does not exist.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          },
+          "500": {
+            "description": "Something went wrong.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "moviesServiceV1"
+        ]
+      }
+    },
+    "/v1/genres": {
+      "get": {
+        "operationId": "moviesServiceV1_GetGenres",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/movies_serviceGenres"
+            }
+          },
+          "404": {
+            "description": "Returned when the resource does not exist.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          },
+          "500": {
+            "description": "Something went wrong.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "moviesServiceV1"
+        ]
+      }
+    },
     "/v1/movie": {
       "get": {
         "operationId": "moviesServiceV1_GetMovie",
@@ -92,7 +160,8 @@
             "name": "movie_id",
             "in": "query",
             "required": false,
-            "type": "string"
+            "type": "integer",
+            "format": "int32"
           }
         ],
         "tags": [
@@ -138,12 +207,6 @@
           },
           {
             "name": "genres_ids",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "directors_ids",
             "in": "query",
             "required": false,
             "type": "string"
@@ -200,6 +263,54 @@
         }
       }
     },
+    "movies_serviceCountries": {
+      "type": "object",
+      "properties": {
+        "countries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/movies_serviceCountry"
+          }
+        }
+      }
+    },
+    "movies_serviceCountry": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "movies_serviceGenre": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "movies_serviceGenres": {
+      "type": "object",
+      "properties": {
+        "genres": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/movies_serviceGenre"
+          }
+        }
+      }
+    },
     "movies_serviceMovie": {
       "type": "object",
       "properties": {
@@ -212,18 +323,10 @@
         "title_en": {
           "type": "string"
         },
-        "genres_ids": {
+        "genres_names": {
           "type": "array",
           "items": {
-            "type": "integer",
-            "format": "int32"
-          }
-        },
-        "directors_ids": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "format": "int32"
+            "type": "string"
           }
         },
         "duration": {
@@ -231,11 +334,10 @@
           "format": "int32",
           "title": "movie duration in minutes"
         },
-        "country_ids": {
+        "countres_names": {
           "type": "array",
           "items": {
-            "type": "integer",
-            "format": "int32"
+            "type": "string"
           }
         },
         "poster_url": {
@@ -273,18 +375,16 @@
         "preview_poster_url": {
           "type": "string"
         },
-        "country_ids": {
+        "countries": {
           "type": "array",
           "items": {
-            "type": "integer",
-            "format": "int32"
+            "type": "string"
           }
         },
-        "genres_ids": {
+        "genres": {
           "type": "array",
           "items": {
-            "type": "integer",
-            "format": "int32"
+            "type": "string"
           }
         },
         "release_year": {

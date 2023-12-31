@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Falokut/movies_service/internal/repository"
+	"github.com/Falokut/movies_service/internal/service"
 	"github.com/Falokut/movies_service/pkg/jaeger"
 	"github.com/Falokut/movies_service/pkg/metrics"
 	logging "github.com/Falokut/online_cinema_ticket_office.loggerwrapper"
@@ -25,10 +26,7 @@ type Config struct {
 		ServerConfig metrics.MetricsServerConfig `yaml:"server_config"`
 	} `yaml:"prometheus"`
 
-	ImageStorageService struct {
-		BasePosterPictureUrl string `yaml:"base_poster_picture_url" env:"BASE_POSTER_PICTURE_URL"`
-		PicturesCategory     string `yaml:"pictures_category" env:"PICRURES_CATEGORY"`
-	} `yaml:"image_storage_service"`
+	PicturesUrlConfig service.PicturesUrlConfig `yaml:"pictures"`
 
 	MoviesCache struct {
 		Network  string `yaml:"network" env:"MOVIES_CACHE_NETWORK"`

@@ -30,7 +30,6 @@ if supported values is empty, then any type values are supported
 | yml name | yml section | env name | param type| description | supported values |
 |-|-|-|-|-|-|
 | log_level   || LOG_LEVEL  |   string   |      logging level        | panic, fatal, error, warning, warn, info, debug, trace|
-| profiles_service_addr   |      | PROFILES_SERVICE_ADDR  |    string       | ip address(or host) with port of profiles service            | all valid addresses formatted like host:port or ip-address:port |
 | healthcheck_port   |      | HEALTHCHECK_PORT  |   string   |     port for healthcheck       | any valid port that is not occupied by other services. The string should not contain delimiters, only the port number|
 | host   |  listen    | HOST  |   string   |  ip address or host to listen   |  |
 | port   |  listen    | PORT  |   string   |  port to listen   | The string should not contain delimiters, only the port number |
@@ -44,6 +43,10 @@ if supported values is empty, then any type values are supported
 |movie_ttl|repository_manager|| time.Duration with positive duration | the time delay between movie deleted from cache|[supported values](#timeduration-yml-supported-values)|
 |filtered_ttl|repository_manager|| time.Duration with positive duration | the time delay between filtered request deleted from cache|[supported values](#timeduration-yml-supported-values)|
 |movie_preview_ttl|repository_manager|| time.Duration with positive duration | the time delay between movie preview deleted from cache|[supported values](#timeduration-yml-supported-values)|
+| base_url   |  pictures    | BASE_URL  |   string   | base url for pictures | url like http://host or https://host|
+| posters_category   |  pictures    | POSTERS_CATEGORY  |   string   |category name for posters in images storage server|only latin characters, without special characters|
+| preview_posters_category   |  pictures    | PREVIEW_POSTERS_CATEGORY  |   string   | category name for preview posters in images storage server |only latin characters, without special characters|
+| backgrounds_category   |  pictures    | BACKGROUNDS_CATEGORY  |   string   | category name for background posters in images storage server |only latin characters, without special characters|
 
 ### Database config
 |yml name| env name|param type| description | supported values |

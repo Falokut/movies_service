@@ -51,8 +51,68 @@ func (mr *MockMoviesRepositoryManagerMockRecorder) GetAgeRatings(ctx interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgeRatings", reflect.TypeOf((*MockMoviesRepositoryManager)(nil).GetAgeRatings), ctx)
 }
 
+// GetAllCountries mocks base method.
+func (m *MockMoviesRepositoryManager) GetAllCountries(ctx context.Context) ([]repository.Country, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllCountries", ctx)
+	ret0, _ := ret[0].([]repository.Country)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllCountries indicates an expected call of GetAllCountries.
+func (mr *MockMoviesRepositoryManagerMockRecorder) GetAllCountries(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllCountries", reflect.TypeOf((*MockMoviesRepositoryManager)(nil).GetAllCountries), ctx)
+}
+
+// GetAllGenres mocks base method.
+func (m *MockMoviesRepositoryManager) GetAllGenres(ctx context.Context) ([]repository.Genre, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllGenres", ctx)
+	ret0, _ := ret[0].([]repository.Genre)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllGenres indicates an expected call of GetAllGenres.
+func (mr *MockMoviesRepositoryManagerMockRecorder) GetAllGenres(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllGenres", reflect.TypeOf((*MockMoviesRepositoryManager)(nil).GetAllGenres), ctx)
+}
+
+// GetCountries mocks base method.
+func (m *MockMoviesRepositoryManager) GetCountries(ctx context.Context, movieId int32) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCountries", ctx, movieId)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCountries indicates an expected call of GetCountries.
+func (mr *MockMoviesRepositoryManagerMockRecorder) GetCountries(ctx, movieId interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCountries", reflect.TypeOf((*MockMoviesRepositoryManager)(nil).GetCountries), ctx, movieId)
+}
+
+// GetGenres mocks base method.
+func (m *MockMoviesRepositoryManager) GetGenres(ctx context.Context, movieId int32) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetGenres", ctx, movieId)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetGenres indicates an expected call of GetGenres.
+func (mr *MockMoviesRepositoryManagerMockRecorder) GetGenres(ctx, movieId interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGenres", reflect.TypeOf((*MockMoviesRepositoryManager)(nil).GetGenres), ctx, movieId)
+}
+
 // GetMovie mocks base method.
-func (m *MockMoviesRepositoryManager) GetMovie(ctx context.Context, movieId string) (repository.Movie, error) {
+func (m *MockMoviesRepositoryManager) GetMovie(ctx context.Context, movieId int32) (repository.Movie, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetMovie", ctx, movieId)
 	ret0, _ := ret[0].(repository.Movie)
@@ -67,7 +127,7 @@ func (mr *MockMoviesRepositoryManagerMockRecorder) GetMovie(ctx, movieId interfa
 }
 
 // GetMoviePreview mocks base method.
-func (m *MockMoviesRepositoryManager) GetMoviePreview(ctx context.Context, movieId string) (repository.MoviePreview, error) {
+func (m *MockMoviesRepositoryManager) GetMoviePreview(ctx context.Context, movieId int32) (repository.MoviePreview, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetMoviePreview", ctx, movieId)
 	ret0, _ := ret[0].(repository.MoviePreview)
@@ -120,7 +180,7 @@ func (m *MockMoviesRepository) EXPECT() *MockMoviesRepositoryMockRecorder {
 }
 
 // GetMovie mocks base method.
-func (m *MockMoviesRepository) GetMovie(ctx context.Context, movieId string) (repository.Movie, error) {
+func (m *MockMoviesRepository) GetMovie(ctx context.Context, movieId int32) (repository.Movie, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetMovie", ctx, movieId)
 	ret0, _ := ret[0].(repository.Movie)
@@ -196,7 +256,7 @@ func (m *MockMoviesPreviewRepository) EXPECT() *MockMoviesPreviewRepositoryMockR
 }
 
 // GetMoviePreview mocks base method.
-func (m *MockMoviesPreviewRepository) GetMoviePreview(ctx context.Context, movieId string) (repository.MoviePreview, error) {
+func (m *MockMoviesPreviewRepository) GetMoviePreview(ctx context.Context, movieId int32) (repository.MoviePreview, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetMoviePreview", ctx, movieId)
 	ret0, _ := ret[0].(repository.MoviePreview)
@@ -249,21 +309,21 @@ func (m *MockMoviesCache) EXPECT() *MockMoviesCacheMockRecorder {
 }
 
 // CacheMovies mocks base method.
-func (m *MockMoviesCache) CacheMovies(ctx context.Context, movies []repository.Movie, TTL time.Duration) error {
+func (m *MockMoviesCache) CacheMovies(ctx context.Context, movies []repository.Movie, ttl time.Duration) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CacheMovies", ctx, movies, TTL)
+	ret := m.ctrl.Call(m, "CacheMovies", ctx, movies, ttl)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CacheMovies indicates an expected call of CacheMovies.
-func (mr *MockMoviesCacheMockRecorder) CacheMovies(ctx, movies, TTL interface{}) *gomock.Call {
+func (mr *MockMoviesCacheMockRecorder) CacheMovies(ctx, movies, ttl interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CacheMovies", reflect.TypeOf((*MockMoviesCache)(nil).CacheMovies), ctx, movies, TTL)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CacheMovies", reflect.TypeOf((*MockMoviesCache)(nil).CacheMovies), ctx, movies, ttl)
 }
 
 // GetMovie mocks base method.
-func (m *MockMoviesCache) GetMovie(ctx context.Context, movieId string) (repository.Movie, error) {
+func (m *MockMoviesCache) GetMovie(ctx context.Context, movieId int32) (repository.Movie, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetMovie", ctx, movieId)
 	ret0, _ := ret[0].(repository.Movie)
@@ -301,35 +361,35 @@ func (m *MockMoviesPreviewCache) EXPECT() *MockMoviesPreviewCacheMockRecorder {
 }
 
 // CacheFilteredRequest mocks base method.
-func (m *MockMoviesPreviewCache) CacheFilteredRequest(ctx context.Context, Filter repository.MoviesFilter, limit, offset uint32, moviesIDs []string, TTL time.Duration) error {
+func (m *MockMoviesPreviewCache) CacheFilteredRequest(ctx context.Context, Filter repository.MoviesFilter, limit, offset uint32, moviesIDs []string, ttl time.Duration) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CacheFilteredRequest", ctx, Filter, limit, offset, moviesIDs, TTL)
+	ret := m.ctrl.Call(m, "CacheFilteredRequest", ctx, Filter, limit, offset, moviesIDs, ttl)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CacheFilteredRequest indicates an expected call of CacheFilteredRequest.
-func (mr *MockMoviesPreviewCacheMockRecorder) CacheFilteredRequest(ctx, Filter, limit, offset, moviesIDs, TTL interface{}) *gomock.Call {
+func (mr *MockMoviesPreviewCacheMockRecorder) CacheFilteredRequest(ctx, Filter, limit, offset, moviesIDs, ttl interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CacheFilteredRequest", reflect.TypeOf((*MockMoviesPreviewCache)(nil).CacheFilteredRequest), ctx, Filter, limit, offset, moviesIDs, TTL)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CacheFilteredRequest", reflect.TypeOf((*MockMoviesPreviewCache)(nil).CacheFilteredRequest), ctx, Filter, limit, offset, moviesIDs, ttl)
 }
 
 // CacheMovies mocks base method.
-func (m *MockMoviesPreviewCache) CacheMovies(ctx context.Context, movies []repository.MoviePreview, TTL time.Duration) error {
+func (m *MockMoviesPreviewCache) CacheMovies(ctx context.Context, movies []repository.MoviePreview, ttl time.Duration) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CacheMovies", ctx, movies, TTL)
+	ret := m.ctrl.Call(m, "CacheMovies", ctx, movies, ttl)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CacheMovies indicates an expected call of CacheMovies.
-func (mr *MockMoviesPreviewCacheMockRecorder) CacheMovies(ctx, movies, TTL interface{}) *gomock.Call {
+func (mr *MockMoviesPreviewCacheMockRecorder) CacheMovies(ctx, movies, ttl interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CacheMovies", reflect.TypeOf((*MockMoviesPreviewCache)(nil).CacheMovies), ctx, movies, TTL)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CacheMovies", reflect.TypeOf((*MockMoviesPreviewCache)(nil).CacheMovies), ctx, movies, ttl)
 }
 
 // GetMovie mocks base method.
-func (m *MockMoviesPreviewCache) GetMovie(ctx context.Context, movieId string) (repository.MoviePreview, error) {
+func (m *MockMoviesPreviewCache) GetMovie(ctx context.Context, movieId int32) (repository.MoviePreview, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetMovie", ctx, movieId)
 	ret0, _ := ret[0].(repository.MoviePreview)
@@ -356,4 +416,110 @@ func (m *MockMoviesPreviewCache) GetMovies(ctx context.Context, Filter repositor
 func (mr *MockMoviesPreviewCacheMockRecorder) GetMovies(ctx, Filter, limit, offset interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMovies", reflect.TypeOf((*MockMoviesPreviewCache)(nil).GetMovies), ctx, Filter, limit, offset)
+}
+
+// MockGenresRepository is a mock of GenresRepository interface.
+type MockGenresRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockGenresRepositoryMockRecorder
+}
+
+// MockGenresRepositoryMockRecorder is the mock recorder for MockGenresRepository.
+type MockGenresRepositoryMockRecorder struct {
+	mock *MockGenresRepository
+}
+
+// NewMockGenresRepository creates a new mock instance.
+func NewMockGenresRepository(ctrl *gomock.Controller) *MockGenresRepository {
+	mock := &MockGenresRepository{ctrl: ctrl}
+	mock.recorder = &MockGenresRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockGenresRepository) EXPECT() *MockGenresRepositoryMockRecorder {
+	return m.recorder
+}
+
+// GetAllGenres mocks base method.
+func (m *MockGenresRepository) GetAllGenres(ctx context.Context) ([]repository.Genre, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllGenres", ctx)
+	ret0, _ := ret[0].([]repository.Genre)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllGenres indicates an expected call of GetAllGenres.
+func (mr *MockGenresRepositoryMockRecorder) GetAllGenres(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllGenres", reflect.TypeOf((*MockGenresRepository)(nil).GetAllGenres), ctx)
+}
+
+// GetGenres mocks base method.
+func (m *MockGenresRepository) GetGenres(ctx context.Context, movieId int32) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetGenres", ctx, movieId)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetGenres indicates an expected call of GetGenres.
+func (mr *MockGenresRepositoryMockRecorder) GetGenres(ctx, movieId interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGenres", reflect.TypeOf((*MockGenresRepository)(nil).GetGenres), ctx, movieId)
+}
+
+// MockCountryRepository is a mock of CountryRepository interface.
+type MockCountryRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockCountryRepositoryMockRecorder
+}
+
+// MockCountryRepositoryMockRecorder is the mock recorder for MockCountryRepository.
+type MockCountryRepositoryMockRecorder struct {
+	mock *MockCountryRepository
+}
+
+// NewMockCountryRepository creates a new mock instance.
+func NewMockCountryRepository(ctrl *gomock.Controller) *MockCountryRepository {
+	mock := &MockCountryRepository{ctrl: ctrl}
+	mock.recorder = &MockCountryRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockCountryRepository) EXPECT() *MockCountryRepositoryMockRecorder {
+	return m.recorder
+}
+
+// GetAllCountries mocks base method.
+func (m *MockCountryRepository) GetAllCountries(ctx context.Context) ([]repository.Country, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllCountries", ctx)
+	ret0, _ := ret[0].([]repository.Country)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllCountries indicates an expected call of GetAllCountries.
+func (mr *MockCountryRepositoryMockRecorder) GetAllCountries(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllCountries", reflect.TypeOf((*MockCountryRepository)(nil).GetAllCountries), ctx)
+}
+
+// GetCountries mocks base method.
+func (m *MockCountryRepository) GetCountries(ctx context.Context, movieId int32) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCountries", ctx, movieId)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCountries indicates an expected call of GetCountries.
+func (mr *MockCountryRepositoryMockRecorder) GetCountries(ctx, movieId interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCountries", reflect.TypeOf((*MockCountryRepository)(nil).GetCountries), ctx, movieId)
 }

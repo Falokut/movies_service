@@ -24,10 +24,6 @@ prometheus:
     host: 0.0.0.0
     port: 7000
 
-image_storage_service:
-  base_poster_picture_url: "http://localhost:80/image"
-  pictures_category: "posters-pictures"
-
 
 movies_cache: 
   network: "tcp"
@@ -43,3 +39,9 @@ repository_manager:
   movie_ttl: 10m
   filtered_ttl: 5m
   movie_preview_ttl: 10m
+
+pictures:
+  base_url: "http://localhost:80/image"
+  posters_category: "posters"
+  preview_posters_category: "previewposters"
+  backgrounds_category: "background"

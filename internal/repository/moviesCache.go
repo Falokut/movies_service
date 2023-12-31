@@ -46,7 +46,7 @@ func NewMoviesCache(logger *logrus.Logger, opt *redis.Options) (*moviesCache, er
 	return &moviesCache{rdb: rdb, logger: logger}, nil
 }
 
-func (c *moviesCache) GetMovie(ctx context.Context, movieId string) (Movie, error) {
+func (c *moviesCache) GetMovie(ctx context.Context, movieId int32) (Movie, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "moviesCache.GetMovie")
 	defer span.Finish()
 	res, err := c.rdb.Get(ctx, fmt.Sprint(movieId)).Bytes()
@@ -65,7 +65,6 @@ func (c *moviesCache) GetMovie(ctx context.Context, movieId string) (Movie, erro
 type cacheMovieFilterKey struct {
 	MoviesIDs    string `json:"1,omitempty"`
 	GenresIDs    string `json:"2,omitempty"`
-	DiretorsIDs  string `json:"3,omitempty"`
 	CountriesIDs string `json:"4,omitempty"`
 	Title        string `json:"5,omitempty"`
 	Limit        uint32 `json:"6,omitempty"`
@@ -76,7 +75,6 @@ func buildFilterKey(filter MoviesFilter, limit, offset uint32) string {
 	key := cacheMovieFilterKey{
 		MoviesIDs:    filter.MoviesIDs,
 		GenresIDs:    filter.GenresIDs,
-		DiretorsIDs:  filter.DirectorsIDs,
 		CountriesIDs: filter.CountriesIDs,
 		Title:        filter.Title,
 		Limit:        limit,
@@ -146,18 +144,17 @@ func (c *moviesCache) CacheFilteredRequest(ctx context.Context, filter MoviesFil
 }
 
 type cachedMovie struct {
-	ID                  string `json:"-"`
-	TitleRU             string `json:"title_ru"`
-	TitleEN             string `json:"title_en"`
-	Description         string `json:"description"`
-	Genres              string `json:"genres"`
-	Duration            int32  `json:"duration"`
-	PosterID            string `json:"poster_picture_id"`
-	BackgroundPictureID string `json:"background_picture_id"`
-	DiretorsIDs         string `json:"directors"`
-	CountriesIDs        string `json:"countries"`
-	ReleaseYear         int32  `json:"release_year"`
-	AgeRating           string `json:"age_rating"`
+	ID                  int32    `json:"-"`
+	TitleRU             string   `json:"title_ru"`
+	TitleEN             string   `json:"title_en"`
+	Description         string   `json:"description"`
+	Genres              []string `json:"genres"`
+	Duration            int32    `json:"duration"`
+	PosterID            string   `json:"poster_picture_id"`
+	BackgroundPictureID string   `json:"background_picture_id"`
+	Countries           []string `json:"countries"`
+	ReleaseYear         int32    `json:"release_year"`
+	AgeRating           string   `json:"age_rating"`
 }
 
 func convertMovieToCacheMovie(movie Movie) cachedMovie {
@@ -166,29 +163,34 @@ func convertMovieToCacheMovie(movie Movie) cachedMovie {
 		TitleRU:             movie.TitleRU,
 		TitleEN:             movie.TitleEN.String,
 		Description:         movie.Description,
-		Genres:              movie.Genres.String,
+		Genres:              movie.Genres,
 		Duration:            movie.Duration,
 		PosterID:            movie.PosterID.String,
 		BackgroundPictureID: movie.BackgroundPictureID.String,
-		DiretorsIDs:         movie.DirectorsIDs.String,
-		CountriesIDs:        movie.CountriesIDs.String,
+		Countries:           movie.Countries,
 		ReleaseYear:         movie.ReleaseYear,
 		AgeRating:           movie.AgeRating,
 	}
 }
 
+func convertToNullString(s string) sql.NullString {
+	if s == "" {
+		return sql.NullString{}
+	}
+	return sql.NullString{String: s, Valid: true}
+}
 func convertCacheMovieToMovie(movie cachedMovie) Movie {
 	return Movie{
-		ID:           movie.ID,
-		TitleRU:      movie.TitleRU,
-		TitleEN:      sql.NullString{String: movie.TitleEN, Valid: true},
-		Description:  movie.Description,
-		Genres:       sql.NullString{String: movie.Genres, Valid: true},
-		Duration:     movie.Duration,
-		PosterID:     sql.NullString{String: movie.PosterID, Valid: true},
-		DirectorsIDs: sql.NullString{String: movie.DiretorsIDs, Valid: true},
-		CountriesIDs: sql.NullString{String: movie.CountriesIDs, Valid: true},
-		ReleaseYear:  movie.ReleaseYear,
-		AgeRating:    movie.AgeRating,
+		ID:                  movie.ID,
+		TitleRU:             movie.TitleRU,
+		TitleEN:             convertToNullString(movie.TitleEN),
+		Description:         movie.Description,
+		Genres:              movie.Genres,
+		Duration:            movie.Duration,
+		PosterID:            convertToNullString(movie.PosterID),
+		BackgroundPictureID: convertToNullString(movie.BackgroundPictureID),
+		Countries:           movie.Countries,
+		ReleaseYear:         movie.ReleaseYear,
+		AgeRating:           movie.AgeRating,
 	}
 }

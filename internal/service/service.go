@@ -15,27 +15,35 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-//go:generate mockgen -source=service.go -destination=mocks/imagesService.go
+//go:generate mockgen -source=service.go -destination=mocks/service.go
 type ImagesService interface {
-	GetPictureURL(ctx context.Context, PictureID string) string
+	GetPictureURL(ctx context.Context, pictureID, baseUrl, category string) string
 }
 
+type PicturesUrlConfig struct {
+	BaseUrl                string `yaml:"base_url" env:"BASE_URL"`
+	PostersCategory        string `yaml:"posters_category" env:"POSTERS_CATEGORY"`
+	PreviewPostersCategory string `yaml:"preview_posters_category" env:"PREVIEW_POSTERS_CATEGORY"`
+	BackgroundsCategory    string `yaml:"backgrounds_category" env:"BACKGROUNDS_CATEGORY"`
+}
 type MoviesService struct {
 	movies_service.UnimplementedMoviesServiceV1Server
 	logger        *logrus.Logger
 	repoManager   repository.MoviesRepositoryManager
 	errorHandler  errorHandler
 	imagesService ImagesService
+	picturesCfg   PicturesUrlConfig
 }
 
 func NewMoviesService(logger *logrus.Logger, repoManager repository.MoviesRepositoryManager,
-	imagesService ImagesService) *MoviesService {
+	imagesService ImagesService, picturesCfg PicturesUrlConfig) *MoviesService {
 	errorHandler := newErrorHandler(logger)
 	return &MoviesService{
 		logger:        logger,
 		repoManager:   repoManager,
 		errorHandler:  errorHandler,
 		imagesService: imagesService,
+		picturesCfg:   picturesCfg,
 	}
 }
 
@@ -80,7 +88,6 @@ func (s *MoviesService) GetMoviesPreview(ctx context.Context, in *movies_service
 	filter := repository.MoviesFilter{
 		MoviesIDs:    ReplaceAll(in.GetMoviesIDs()),
 		GenresIDs:    ReplaceAll(in.GetGenresIDs()),
-		DirectorsIDs: ReplaceAll(in.GetDirectorsIDs()),
 		CountriesIDs: ReplaceAll(in.GetCountriesIDs()),
 		AgeRating:    GetAgeRatingsFilter(in.GetAgeRatings()),
 		Title:        ReplaceAll(in.GetTitle()),
@@ -102,7 +109,7 @@ func (s *MoviesService) GetMoviesPreview(ctx context.Context, in *movies_service
 	if len(Movies) == 0 {
 		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrNotFound, "")
 	}
-	movies := make(map[string]*movies_service.MoviePreview, len(Movies))
+	movies := make(map[int32]*movies_service.MoviePreview, len(Movies))
 	for _, movie := range Movies {
 		movies[movie.ID] = s.convertDbMoviePreviewToProto(ctx, movie)
 	}
@@ -110,6 +117,41 @@ func (s *MoviesService) GetMoviesPreview(ctx context.Context, in *movies_service
 	span.SetTag("grpc.status", codes.OK)
 	return &movies_service.MoviesPreview{Movies: movies}, nil
 }
+
+func (s *MoviesService) GetGenres(ctx context.Context, in *emptypb.Empty) (*movies_service.Genres, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "MoviesService.GetGenres")
+	defer span.Finish()
+
+	genres, err := s.repoManager.GetAllGenres(ctx)
+	if err != nil {
+		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrInternal, err.Error())
+	}
+
+	proto := make([]*movies_service.Genre, 0, len(genres))
+	for _, genre := range genres {
+		proto = append(proto, &movies_service.Genre{Id: genre.ID, Name: genre.Name})
+	}
+	return &movies_service.Genres{Genres: proto}, nil
+}
+
+func (s *MoviesService) GetCountries(ctx context.Context, in *emptypb.Empty) (*movies_service.Countries, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "MoviesService.GetCountries")
+	defer span.Finish()
+
+	countries, err := s.repoManager.GetAllCountries(ctx)
+	if err != nil {
+		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrInternal, err.Error())
+	}
+
+	proto := make([]*movies_service.Country, 0, len(countries))
+	for _, country := range countries {
+		proto = append(proto, &movies_service.Country{Id: country.ID, Name: country.Name})
+	}
+
+	span.SetTag("grpc.status", codes.OK)
+	return &movies_service.Countries{Countries: proto}, nil
+}
+
 func GetAgeRatingsFilter(ageRating string) string {
 	ageRating = ReplaceAll(strings.ReplaceAll(ageRating, " ", ""))
 	str := strings.Split(ageRating, ",")
@@ -120,14 +162,16 @@ func GetAgeRatingsFilter(ageRating string) string {
 	}
 	return strings.Join(str, ",")
 }
+
 func (s *MoviesService) convertDbMoviePreviewToProto(ctx context.Context, movie repository.MoviePreview) *movies_service.MoviePreview {
 	return &movies_service.MoviePreview{
-		TitleRU:          movie.TitleRU,
-		TitleEN:          movie.TitleEN.String,
-		GenresIDs:        s.intSliceFromString(movie.Genres.String),
-		CountriesIDs:     s.intSliceFromString(movie.CountriesIDs.String),
-		Duration:         movie.Duration,
-		PreviewPosterURL: s.imagesService.GetPictureURL(ctx, movie.PreviewPosterID.String),
+		TitleRU:   movie.TitleRU,
+		TitleEN:   movie.TitleEN.String,
+		Genres:    movie.Genres,
+		Countries: movie.Countries,
+		Duration:  movie.Duration,
+		PreviewPosterURL: s.imagesService.GetPictureURL(ctx,
+			movie.PreviewPosterID.String, s.picturesCfg.BaseUrl, s.picturesCfg.PreviewPostersCategory),
 		ShortDescription: movie.ShortDescription,
 		ReleaseYear:      movie.ReleaseYear,
 		AgeRating:        movie.AgeRating,
@@ -136,38 +180,21 @@ func (s *MoviesService) convertDbMoviePreviewToProto(ctx context.Context, movie 
 
 func (s *MoviesService) convertDbMovieToProto(ctx context.Context, movie repository.Movie) *movies_service.Movie {
 	return &movies_service.Movie{
-		Description:   movie.Description,
-		TitleRU:       movie.TitleRU,
-		TitleEN:       movie.TitleEN.String,
-		GenresIDs:     s.intSliceFromString(movie.Genres.String),
-		DirectorsIDs:  s.intSliceFromString(movie.DirectorsIDs.String),
-		Duration:      movie.Duration,
-		CountriesIDs:  s.intSliceFromString(movie.CountriesIDs.String),
-		PosterURL:     s.imagesService.GetPictureURL(ctx, movie.PosterID.String),
-		BackgroundURL: s.imagesService.GetPictureURL(ctx, movie.BackgroundPictureID.String),
-		ReleaseYear:   movie.ReleaseYear,
-		AgeRating:     movie.AgeRating,
+		Description: movie.Description,
+		TitleRU:     movie.TitleRU,
+		TitleEN:     movie.TitleEN.String,
+		Genres:      movie.Genres,
+		Duration:    movie.Duration,
+		Countries:   movie.Countries,
+		PosterURL: s.imagesService.GetPictureURL(ctx,
+			movie.PosterID.String, s.picturesCfg.BaseUrl, s.picturesCfg.PostersCategory),
+		BackgroundURL: s.imagesService.GetPictureURL(ctx,
+			movie.BackgroundPictureID.String, s.picturesCfg.BaseUrl, s.picturesCfg.BackgroundsCategory),
+		ReleaseYear: movie.ReleaseYear,
+		AgeRating:   movie.AgeRating,
 	}
 }
 
 func ReplaceAll(str string) string {
 	return strings.ReplaceAll(str, `"`, "")
-}
-func (s *MoviesService) intSliceFromString(str string) []int32 {
-	if str == "" {
-		return []int32{}
-	}
-	str = strings.Trim(str, "{}")
-	nums := strings.Split(str, ",")
-	var res = make([]int32, len(nums))
-
-	for i, n := range nums {
-		num, err := strconv.Atoi(n)
-		if err != nil {
-			s.logger.Errorf("invalid string, can't convert into int slice err: %s, string %s", err, str)
-			return []int32{}
-		}
-		res[i] = int32(num)
-	}
-	return res
 }

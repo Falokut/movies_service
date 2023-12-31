@@ -46,7 +46,7 @@ func NewMoviesPreviewCache(logger *logrus.Logger, opt *redis.Options) (*moviesPr
 	return &moviesPreviewCache{rdb: rdb, logger: logger}, nil
 }
 
-func (c *moviesPreviewCache) GetMovie(ctx context.Context, movieId string) (MoviePreview, error) {
+func (c *moviesPreviewCache) GetMovie(ctx context.Context, movieId int32) (MoviePreview, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "moviesPreviewCache.GetMovie")
 	defer span.Finish()
 	res, err := c.rdb.Get(ctx, fmt.Sprint(movieId)).Bytes()
@@ -77,7 +77,6 @@ func buildPreviewFilterKey(filter MoviesFilter, limit, offset uint32) string {
 	key := cacheMoviePreviewFilterKey{
 		MoviesIDs:    filter.MoviesIDs,
 		GenresIDs:    filter.GenresIDs,
-		DiretorsIDs:  filter.DirectorsIDs,
 		CountriesIDs: filter.CountriesIDs,
 		Title:        filter.Title,
 		Limit:        limit,
@@ -149,30 +148,30 @@ func (c *moviesPreviewCache) CacheFilteredRequest(ctx context.Context, filter Mo
 }
 
 type cachedMoviePreview struct {
-	ID           string `json:"-"`
-	TitleRU      string `json:"title_ru"`
-	TitleEN      string `json:"title_en"`
-	Description  string `json:"description"`
-	Genres       string `json:"genres"`
-	Duration     int32  `json:"duration"`
-	PosterID     string `json:"poster_picture_id"`
-	CountriesIDs string `json:"countries"`
-	ReleaseYear  int32  `json:"release_year"`
-	AgeRating    string `json:"age_rating"`
+	ID          int32    `json:"-"`
+	TitleRU     string   `json:"title_ru"`
+	TitleEN     string   `json:"title_en"`
+	Description string   `json:"description"`
+	Genres      []string `json:"genres"`
+	Duration    int32    `json:"duration"`
+	PosterID    string   `json:"poster_picture_id"`
+	Countries   []string `json:"countries"`
+	ReleaseYear int32    `json:"release_year"`
+	AgeRating   string   `json:"age_rating"`
 }
 
 func convertMoviePreviewToCacheMovie(movie MoviePreview) cachedMoviePreview {
 	return cachedMoviePreview{
-		ID:           movie.ID,
-		TitleRU:      movie.TitleRU,
-		TitleEN:      movie.TitleEN.String,
-		Description:  movie.ShortDescription,
-		Genres:       movie.Genres.String,
-		Duration:     movie.Duration,
-		PosterID:     movie.PreviewPosterID.String,
-		CountriesIDs: movie.CountriesIDs.String,
-		ReleaseYear:  movie.ReleaseYear,
-		AgeRating:    movie.AgeRating,
+		ID:          movie.ID,
+		TitleRU:     movie.TitleRU,
+		TitleEN:     movie.TitleEN.String,
+		Description: movie.ShortDescription,
+		Genres:      movie.Genres,
+		Duration:    movie.Duration,
+		PosterID:    movie.PreviewPosterID.String,
+		Countries:   movie.Countries,
+		ReleaseYear: movie.ReleaseYear,
+		AgeRating:   movie.AgeRating,
 	}
 }
 
@@ -182,10 +181,10 @@ func convertCacheMoviePreviewToMoviePreview(movie cachedMoviePreview) MoviePrevi
 		TitleRU:          movie.TitleRU,
 		TitleEN:          sql.NullString{String: movie.TitleEN, Valid: true},
 		ShortDescription: movie.Description,
-		Genres:           sql.NullString{String: movie.Genres, Valid: true},
+		Genres:           movie.Genres,
 		Duration:         movie.Duration,
 		PreviewPosterID:  sql.NullString{String: movie.PosterID, Valid: true},
-		CountriesIDs:     sql.NullString{String: movie.CountriesIDs, Valid: true},
+		Countries:        movie.Countries,
 		ReleaseYear:      movie.ReleaseYear,
 		AgeRating:        movie.AgeRating,
 	}

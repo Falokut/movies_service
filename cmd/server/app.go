@@ -56,14 +56,35 @@ func main() {
 	}()
 
 	logger.Info("Database initializing")
-	database, err := repository.NewPostgreDB(appCfg.DBConfig)
+	moviesDatabase, err := repository.NewPostgreDB(appCfg.DBConfig)
 	if err != nil {
 		logger.Fatalf("Shutting down, connection to the database is not established: %s", err.Error())
 	}
 
 	logger.Info("Repository initializing")
-	repo := repository.NewMoviesRepository(database)
-	defer repo.Shutdown()
+	moviesRepo := repository.NewMoviesRepository(moviesDatabase, logger.Logger)
+	defer moviesRepo.Shutdown()
+
+	genresDatabase, err := repository.NewPostgreDB(appCfg.DBConfig)
+	if err != nil {
+		logger.Fatalf("Shutting down, connection to the database is not established: %s", err.Error())
+	}
+	genresRepo := repository.NewGenresRepository(genresDatabase, logger.Logger)
+	defer genresRepo.Shutdown()
+
+	countriesDatabase, err := repository.NewPostgreDB(appCfg.DBConfig)
+	if err != nil {
+		logger.Fatalf("Shutting down, connection to the database is not established: %s", err.Error())
+	}
+	countriesRepo := repository.NewCountriesRepository(countriesDatabase, logger.Logger)
+	defer countriesRepo.Shutdown()
+
+	ageRatingsDatabase, err := repository.NewPostgreDB(appCfg.DBConfig)
+	if err != nil {
+		logger.Fatalf("Shutting down, connection to the database is not established: %s", err.Error())
+	}
+	ageRatingsRepo := repository.NewAgeRatingsRepository(ageRatingsDatabase, logger.Logger)
+	defer ageRatingsRepo.Shutdown()
 
 	moviesCache, err := repository.NewMoviesCache(logger.Logger, getMoviesCacheOptions(appCfg))
 	if err != nil {
@@ -79,7 +100,8 @@ func main() {
 
 	logger.Info("Healthcheck initializing")
 	healthcheckManager := healthcheck.NewHealthManager(logger.Logger,
-		[]healthcheck.HealthcheckResource{database, moviesCache, moviesPreviewCache}, appCfg.HealthcheckPort, nil)
+		[]healthcheck.HealthcheckResource{moviesDatabase, ageRatingsDatabase, genresDatabase,
+			 countriesDatabase, moviesCache, moviesPreviewCache}, appCfg.HealthcheckPort, nil)
 	go func() {
 		logger.Info("Healthcheck server running")
 		if err := healthcheckManager.RunHealthcheckEndpoint(); err != nil {
@@ -87,18 +109,17 @@ func main() {
 		}
 	}()
 
-	imagesService := service.NewImageService(getImageServiceConfig(appCfg),
-		logger.Logger)
+	imagesService := service.NewImageService(logger.Logger)
 
-	repoManager := repository.NewMoviesRepositoryManager(repo, moviesCache, repo,
-		moviesPreviewCache, repo,
+	repoManager := repository.NewMoviesRepositoryManager(moviesRepo, moviesCache, moviesRepo,
+		moviesPreviewCache, ageRatingsRepo, genresRepo, countriesRepo, metric,
 		repository.RepositoryManagerConfig{
 			MovieTTL:        appCfg.RepositoryManager.MovieTTL,
 			FilteredTTL:     appCfg.RepositoryManager.FilteredTTL,
 			MoviePreviewTTL: appCfg.RepositoryManager.MoviePreviewTTL,
 		}, logger.Logger)
 	logger.Info("Service initializing")
-	service := service.NewMoviesService(logger.Logger, repoManager, imagesService)
+	service := service.NewMoviesService(logger.Logger, repoManager, imagesService, appCfg.PicturesUrlConfig)
 
 	logger.Info("Server initializing")
 	s := server.NewServer(logger.Logger, service)
@@ -109,13 +130,6 @@ func main() {
 
 	<-quit
 	s.Shutdown()
-}
-
-func getImageServiceConfig(cfg *config.Config) service.ImageServiceConfig {
-	return service.ImageServiceConfig{
-		BasePosterPictureUrl: cfg.ImageStorageService.BasePosterPictureUrl,
-		PicturesCategory:     cfg.ImageStorageService.PicturesCategory,
-	}
 }
 
 func getListenServerConfig(cfg *config.Config) server.Config {

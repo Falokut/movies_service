@@ -26,6 +26,8 @@ type MoviesServiceV1Client interface {
 	GetMovie(ctx context.Context, in *GetMovieRequest, opts ...grpc.CallOption) (*Movie, error)
 	GetMoviesPreview(ctx context.Context, in *GetMoviesPreviewRequest, opts ...grpc.CallOption) (*MoviesPreview, error)
 	GetAgeRatings(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*AgeRatings, error)
+	GetGenres(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Genres, error)
+	GetCountries(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Countries, error)
 }
 
 type moviesServiceV1Client struct {
@@ -63,6 +65,24 @@ func (c *moviesServiceV1Client) GetAgeRatings(ctx context.Context, in *emptypb.E
 	return out, nil
 }
 
+func (c *moviesServiceV1Client) GetGenres(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Genres, error) {
+	out := new(Genres)
+	err := c.cc.Invoke(ctx, "/movies_service.moviesServiceV1/GetGenres", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *moviesServiceV1Client) GetCountries(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Countries, error) {
+	out := new(Countries)
+	err := c.cc.Invoke(ctx, "/movies_service.moviesServiceV1/GetCountries", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MoviesServiceV1Server is the server API for MoviesServiceV1 service.
 // All implementations must embed UnimplementedMoviesServiceV1Server
 // for forward compatibility
@@ -70,6 +90,8 @@ type MoviesServiceV1Server interface {
 	GetMovie(context.Context, *GetMovieRequest) (*Movie, error)
 	GetMoviesPreview(context.Context, *GetMoviesPreviewRequest) (*MoviesPreview, error)
 	GetAgeRatings(context.Context, *emptypb.Empty) (*AgeRatings, error)
+	GetGenres(context.Context, *emptypb.Empty) (*Genres, error)
+	GetCountries(context.Context, *emptypb.Empty) (*Countries, error)
 	mustEmbedUnimplementedMoviesServiceV1Server()
 }
 
@@ -85,6 +107,12 @@ func (UnimplementedMoviesServiceV1Server) GetMoviesPreview(context.Context, *Get
 }
 func (UnimplementedMoviesServiceV1Server) GetAgeRatings(context.Context, *emptypb.Empty) (*AgeRatings, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAgeRatings not implemented")
+}
+func (UnimplementedMoviesServiceV1Server) GetGenres(context.Context, *emptypb.Empty) (*Genres, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetGenres not implemented")
+}
+func (UnimplementedMoviesServiceV1Server) GetCountries(context.Context, *emptypb.Empty) (*Countries, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCountries not implemented")
 }
 func (UnimplementedMoviesServiceV1Server) mustEmbedUnimplementedMoviesServiceV1Server() {}
 
@@ -153,6 +181,42 @@ func _MoviesServiceV1_GetAgeRatings_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MoviesServiceV1_GetGenres_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MoviesServiceV1Server).GetGenres(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/movies_service.moviesServiceV1/GetGenres",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MoviesServiceV1Server).GetGenres(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MoviesServiceV1_GetCountries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MoviesServiceV1Server).GetCountries(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/movies_service.moviesServiceV1/GetCountries",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MoviesServiceV1Server).GetCountries(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MoviesServiceV1_ServiceDesc is the grpc.ServiceDesc for MoviesServiceV1 service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -171,6 +235,14 @@ var MoviesServiceV1_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetAgeRatings",
 			Handler:    _MoviesServiceV1_GetAgeRatings_Handler,
+		},
+		{
+			MethodName: "GetGenres",
+			Handler:    _MoviesServiceV1_GetGenres_Handler,
+		},
+		{
+			MethodName: "GetCountries",
+			Handler:    _MoviesServiceV1_GetCountries_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

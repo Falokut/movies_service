@@ -35,15 +35,15 @@ func (m *MockImagesService) EXPECT() *MockImagesServiceMockRecorder {
 }
 
 // GetPictureURL mocks base method.
-func (m *MockImagesService) GetPictureURL(ctx context.Context, PictureID string) string {
+func (m *MockImagesService) GetPictureURL(ctx context.Context, pictureID, baseUrl, category string) string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPictureURL", ctx, PictureID)
+	ret := m.ctrl.Call(m, "GetPictureURL", ctx, pictureID, baseUrl, category)
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
 // GetPictureURL indicates an expected call of GetPictureURL.
-func (mr *MockImagesServiceMockRecorder) GetPictureURL(ctx, PictureID interface{}) *gomock.Call {
+func (mr *MockImagesServiceMockRecorder) GetPictureURL(ctx, pictureID, baseUrl, category interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPictureURL", reflect.TypeOf((*MockImagesService)(nil).GetPictureURL), ctx, PictureID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPictureURL", reflect.TypeOf((*MockImagesService)(nil).GetPictureURL), ctx, pictureID, baseUrl, category)
 }

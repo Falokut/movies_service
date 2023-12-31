@@ -65,4 +65,16 @@ service moviesServiceV1 {
             get: "/v1/age-ratings"
         };
     }
+
+    rpc GetGenres(google.protobuf.Empty) returns(Genres) {
+        option (google.api.http) = {
+            get: "/v1/genres"
+        };
+    }
+
+    rpc GetCountries(google.protobuf.Empty) returns(Countries) {
+        option (google.api.http) = {
+            get: "/v1/countries"
+        };
+    }
 }

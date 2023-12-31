@@ -26,11 +26,6 @@ func validateFilter(filter *movies_service.GetMoviesPreviewRequest) error {
 			return err
 		}
 	}
-	if filter.GetDirectorsIDs() != "" {
-		if err := checkFilterParam(*filter.DirectorsIDs); err != nil {
-			return err
-		}
-	}
 	if filter.GetAgeRatings() != "" {
 		if strings.Contains(*filter.AgeRatings, "'") {
 			return ErrInvalidFilter
