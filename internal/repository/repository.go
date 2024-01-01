@@ -74,8 +74,9 @@ type AgeRatingRepository interface {
 }
 
 type MoviesPreviewRepository interface {
-	GetMoviesPreview(ctx context.Context, Filter MoviesFilter, limit, offset uint32) ([]string, error)
+	GetMoviesPreviewIds(ctx context.Context, Filter MoviesFilter, limit, offset uint32) ([]string, error)
 	GetMoviePreview(ctx context.Context, movieId int32) (MoviePreview, error)
+	GetMovies(ctx context.Context, ids []int32) ([]MoviePreview, error)
 }
 
 type MoviesCache interface {
@@ -85,7 +86,9 @@ type MoviesCache interface {
 
 type MoviesPreviewCache interface {
 	GetMovie(ctx context.Context, movieId int32) (MoviePreview, error)
-	GetMovies(ctx context.Context, Filter MoviesFilter, limit, offset uint32) ([]string, error)
+	GetMoviesIDs(ctx context.Context, Filter MoviesFilter, limit, offset uint32) ([]string, error)
+	GetMovies(ctx context.Context, ids []string) ([]MoviePreview, []string, error)
+
 	CacheMovies(ctx context.Context, movies []MoviePreview, ttl time.Duration) error
 	CacheFilteredRequest(ctx context.Context, Filter MoviesFilter, limit, offset uint32, moviesIDs []string, ttl time.Duration) error
 }
@@ -97,6 +100,7 @@ type Genre struct {
 
 type GenresRepository interface {
 	GetGenres(ctx context.Context, movieId int32) ([]string, error)
+	GetGenresForMovies(ctx context.Context, ids []string) (map[int32][]string, error)
 	GetAllGenres(ctx context.Context) ([]Genre, error)
 }
 
@@ -107,5 +111,6 @@ type Country struct {
 
 type CountryRepository interface {
 	GetCountries(ctx context.Context, movieId int32) ([]string, error)
+	GetCountriesForMovies(ctx context.Context, ids []string) (map[int32][]string, error)
 	GetAllCountries(ctx context.Context) ([]Country, error)
 }

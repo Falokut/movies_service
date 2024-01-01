@@ -77,7 +77,7 @@ func (m *RepositoryManager) GetMovie(ctx context.Context, movieID int32) (Movie,
 	reqCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	go func() {
-		movie, err = m.moviesRepo.GetMovie(reqCtx, movieID)
+		movie, err := m.moviesRepo.GetMovie(reqCtx, movieID)
 		if err != nil {
 			errCh <- err
 			return
@@ -101,12 +101,12 @@ func (m *RepositoryManager) GetMovie(ctx context.Context, movieID int32) (Movie,
 		select {
 		case <-reqCtx.Done():
 			return Movie{}, reqCtx.Err()
-		case struc := <-genresAndCountriesCh:
+		case str := <-genresAndCountriesCh:
 			if genresAndCountriesDone {
 				break
 			}
-			movie.Genres = struc.genres
-			movie.Countries = struc.countries
+			movie.Genres = str.genres
+			movie.Countries = str.countries
 			genresAndCountriesDone = true
 			m.logger.Debug("Genres and countries done")
 		case res := <-movieCh:
@@ -132,11 +132,12 @@ func (m *RepositoryManager) GetMovie(ctx context.Context, movieID int32) (Movie,
 		}
 	}
 
-	go func(Movie) {
-		if err := m.moviesCache.CacheMovies(context.Background(), []Movie{movie}, m.cfg.MovieTTL); err != nil {
+	go func(mov Movie) {
+		if err := m.moviesCache.CacheMovies(context.Background(), []Movie{mov}, m.cfg.MovieTTL); err != nil {
 			m.logger.Error(err)
 		}
 	}(movie)
+
 	return movie, nil
 
 }
@@ -220,7 +221,7 @@ func (m *RepositoryManager) GetMoviePreview(ctx context.Context, movieID int32) 
 	reqCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	go func() {
-		movie, err = m.moviesPreviewRepo.GetMoviePreview(reqCtx, movieID)
+		movie, err := m.moviesPreviewRepo.GetMoviePreview(reqCtx, movieID)
 		if err != nil {
 			errCh <- err
 			return
@@ -283,6 +284,168 @@ func (m *RepositoryManager) GetMoviePreview(ctx context.Context, movieID int32) 
 	return movie, nil
 }
 
+func (m *RepositoryManager) getGenresAndCountriesForMovies(ctx context.Context, ids []string) (genres, countries map[int32][]string, err error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "RepositoryManager.getGenresAndCountriesForMovie")
+	defer span.Finish()
+	defer span.SetTag("error", err != nil)
+
+	genresCh, countriesCh := make(chan map[int32][]string, 1), make(chan map[int32][]string, 1)
+	errCh := make(chan error, 1)
+
+	go func() {
+		res, err := m.genresRepo.GetGenresForMovies(ctx, ids)
+		if err != nil {
+			errCh <- err
+			return
+		}
+		genresCh <- res
+	}()
+	go func() {
+		res, err := m.countriesRepo.GetCountriesForMovies(ctx, ids)
+		if err != nil {
+			errCh <- err
+			return
+		}
+		countriesCh <- res
+	}()
+
+	var countriesDone, genresDone bool
+	for !genresDone || !countriesDone {
+		select {
+		case <-ctx.Done():
+			return map[int32][]string{}, map[int32][]string{}, ctx.Err()
+		case g := <-genresCh:
+			if genresDone {
+				break
+			}
+			genres = g
+			genresDone = true
+			m.logger.Debug("genres done")
+		case c := <-countriesCh:
+			if countriesDone {
+				break
+			}
+			countries = c
+			countriesDone = true
+			m.logger.Debug("countries done")
+		case err = <-errCh:
+			return
+		}
+	}
+
+	return genres, countries, nil
+}
+
+func (m *RepositoryManager) getMoviesPreview(ctx context.Context, ids []string) ([]MoviePreview, error) {
+	if len(ids) == 1 {
+		id, _ := strconv.Atoi(ids[0])
+		movie, err := m.GetMoviePreview(ctx, int32(id))
+		return []MoviePreview{movie}, err
+	}
+
+	span, ctx := opentracing.StartSpanFromContext(ctx, "RepositoryManager.getMoviesPreview")
+	defer span.Finish()
+	var err error
+	defer span.SetTag("error", err != nil)
+
+	m.logger.Info("Searching previews in cache")
+	cachedPreviews, notFoundedIds, err := m.moviesPreviewCache.GetMovies(ctx, ids)
+	if errors.Is(err, redis.Nil) {
+		m.metrics.IncCacheMiss("getMoviesPreview", int32(len(ids)))
+	} else if err != nil {
+		m.logger.Error(err)
+	}
+
+	if len(cachedPreviews) == len(ids) {
+		m.metrics.IncCacheHits("getMoviesPreview", int32(len(ids)))
+		return cachedPreviews, nil
+	}
+
+	if len(cachedPreviews) != 0 && err == nil {
+		m.metrics.IncCacheHits("getMoviesPreview", int32(len(ids)-len(notFoundedIds)))
+		m.metrics.IncCacheMiss("getMoviesPreview", int32(len(notFoundedIds)))
+		ids = notFoundedIds
+	}
+
+	moviesPreviewsCh := make(chan []MoviePreview, 1)
+	countriesAndGenresCh := make(chan struct{ genres, countries map[int32][]string }, 1)
+	errCh := make(chan error, 1)
+	go func() {
+		m.logger.Info("Searching genres and countries previews in repo")
+		genres, countries, err := m.getGenresAndCountriesForMovies(ctx, ids)
+		if err != nil {
+			errCh <- err
+			return
+		}
+		countriesAndGenresCh <- struct {
+			genres    map[int32][]string
+			countries map[int32][]string
+		}{genres: genres, countries: countries}
+	}()
+
+	go func() {
+		m.logger.Info("Searching previews in repo")
+		previews, err := m.moviesPreviewRepo.GetMovies(ctx, convertStringsIntoInt(ids))
+		if err != nil {
+			errCh <- err
+		}
+		moviesPreviewsCh <- previews
+		close(moviesPreviewsCh)
+	}()
+
+	var moviesDone, countriesAndMoviesDone bool
+	var movies []MoviePreview
+	var countries, genres map[int32][]string
+
+	for !moviesDone || !countriesAndMoviesDone {
+		select {
+		case <-ctx.Done():
+			return []MoviePreview{}, ctx.Err()
+		case mov := <-moviesPreviewsCh:
+			if moviesDone {
+				break
+			}
+			movies = mov
+			moviesDone = true
+			m.logger.Info("movies done")
+		case st := <-countriesAndGenresCh:
+			if countriesAndMoviesDone {
+				break
+			}
+			countries, genres = st.countries, st.genres
+			countriesAndMoviesDone = true
+			m.logger.Info("countries and genres done")
+		}
+	}
+
+	m.logger.Info("Filling preview")
+	var moviesFromRepo = make([]MoviePreview, 0, len(movies))
+	for _, movie := range movies {
+		movie.Countries = countries[movie.ID]
+		movie.Genres = genres[movie.ID]
+		m.logger.Debugf("countries, genres: %v %v", countries, genres)
+		moviesFromRepo = append(moviesFromRepo, movie)
+	}
+
+	go func() {
+		m.moviesPreviewCache.CacheMovies(context.Background(), moviesFromRepo, m.cfg.MoviePreviewTTL)
+	}()
+
+	return append(moviesFromRepo, cachedPreviews...), nil
+}
+
+func convertStringsIntoInt(s []string) []int32 {
+	nums := make([]int32, 0, len(s))
+	for _, num := range s {
+		n, err := strconv.Atoi(num)
+		if err != nil {
+			continue
+		}
+		nums = append(nums, int32(n))
+	}
+	return nums
+}
+
 func (m *RepositoryManager) GetMoviesPreview(ctx context.Context, filter MoviesFilter, limit, offset uint32) ([]MoviePreview, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "RepositoryManager.GetMoviesPreview")
 	defer span.Finish()
@@ -290,16 +453,18 @@ func (m *RepositoryManager) GetMoviesPreview(ctx context.Context, filter MoviesF
 	defer span.SetTag("error", err != nil)
 
 	m.logger.Info("Trying get movies ids from cache")
-	moviesIds, err := m.moviesPreviewCache.GetMovies(ctx, filter, limit, offset)
+	moviesIds, err := m.moviesPreviewCache.GetMoviesIDs(ctx, filter, limit, offset)
 	inCache := true
 	if err != nil {
 		m.logger.Warn(err)
 		inCache = false
+		m.metrics.IncCacheMiss("GetMoviesPreview", 1)
 	}
-
-	if !inCache {
+	if inCache {
+		m.metrics.IncCacheHits("GetMoviesPreview", 1)
+	} else {
 		m.logger.Info("Getting movies ids from repository")
-		moviesIds, err = m.moviesPreviewRepo.GetMoviesPreview(ctx, filter, limit, offset)
+		moviesIds, err = m.moviesPreviewRepo.GetMoviesPreviewIds(ctx, filter, limit, offset)
 		if err != nil {
 			return []MoviePreview{}, err
 		}
@@ -319,19 +484,9 @@ func (m *RepositoryManager) GetMoviesPreview(ctx context.Context, filter MoviesF
 	}
 
 	m.logger.Info("Filling movies")
-	var movies = make([]MoviePreview, 0, len(moviesIds))
-	for _, id := range moviesIds {
-		movieID, _ := strconv.Atoi(id)
-		movie, err := m.GetMoviePreview(ctx, int32(movieID))
-		if errors.Is(err, ErrNotFound) {
-			continue
-		}
-		if err != nil {
-			return []MoviePreview{}, err
-		}
-
-		movies = append(movies, movie)
-
+	movies, err := m.getMoviesPreview(ctx, moviesIds)
+	if err != nil {
+		return []MoviePreview{}, err
 	}
 
 	return movies, nil

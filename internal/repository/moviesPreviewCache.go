@@ -11,6 +11,7 @@ import (
 	"github.com/opentracing/opentracing-go"
 	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/exp/maps"
 )
 
 type moviesPreviewCache struct {
@@ -49,6 +50,7 @@ func NewMoviesPreviewCache(logger *logrus.Logger, opt *redis.Options) (*moviesPr
 func (c *moviesPreviewCache) GetMovie(ctx context.Context, movieId int32) (MoviePreview, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "moviesPreviewCache.GetMovie")
 	defer span.Finish()
+
 	res, err := c.rdb.Get(ctx, fmt.Sprint(movieId)).Bytes()
 	if err != nil {
 		return MoviePreview{}, err
@@ -62,15 +64,46 @@ func (c *moviesPreviewCache) GetMovie(ctx context.Context, movieId int32) (Movie
 	return convertCacheMoviePreviewToMoviePreview(movie), nil
 }
 
+func (c *moviesPreviewCache) GetMovies(ctx context.Context, ids []string) ([]MoviePreview, []string, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "moviesPreviewCache.GetPersons")
+	defer span.Finish()
+
+	var moviesIDs = make(map[string]struct{}, len(ids))
+	for _, id := range ids {
+		moviesIDs[id] = struct{}{}
+	}
+
+	cached, err := c.rdb.MGet(ctx, ids...).Result()
+	if err != nil {
+		return []MoviePreview{}, []string{}, err
+	}
+
+	var cachedMovies = make([]MoviePreview, 0, len(cached))
+	for _, cache := range cached {
+		if cache == nil {
+			continue
+		}
+
+		movie := cachedMoviePreview{}
+		err = json.Unmarshal([]byte(cache.(string)), &movie)
+		if err != nil {
+			return []MoviePreview{}, []string{}, err
+		}
+		delete(moviesIDs, fmt.Sprint(movie.ID))
+		cachedMovies = append(cachedMovies, convertCacheMoviePreviewToMoviePreview(movie))
+	}
+
+	return cachedMovies, maps.Keys(moviesIDs), nil
+}
+
 type cacheMoviePreviewFilterKey struct {
 	MoviesIDs    string `json:"1,omitempty"`
 	GenresIDs    string `json:"2,omitempty"`
-	DiretorsIDs  string `json:"3,omitempty"`
-	CountriesIDs string `json:"4,omitempty"`
-	Title        string `json:"5,omitempty"`
-	Limit        uint32 `json:"6,omitempty"`
-	Offset       uint32 `json:"7,omitempty"`
-	AgeRating    string `json:"8,omitempty"`
+	CountriesIDs string `json:"3,omitempty"`
+	Title        string `json:"4,omitempty"`
+	Limit        uint32 `json:"5,omitempty"`
+	Offset       uint32 `json:"6,omitempty"`
+	AgeRating    string `json:"7,omitempty"`
 }
 
 func buildPreviewFilterKey(filter MoviesFilter, limit, offset uint32) string {
@@ -89,11 +122,11 @@ func buildPreviewFilterKey(filter MoviesFilter, limit, offset uint32) string {
 }
 
 type cachedPreviewFilteredRequest struct {
-	Ids []string `json:"-,"`
+	Ids []string `json:"ids"`
 }
 
-func (c *moviesPreviewCache) GetMovies(ctx context.Context, filter MoviesFilter, limit, offset uint32) ([]string, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "moviesPreviewCache.GetMovies")
+func (c *moviesPreviewCache) GetMoviesIDs(ctx context.Context, filter MoviesFilter, limit, offset uint32) ([]string, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "moviesPreviewCache.GetMoviesIds")
 	defer span.Finish()
 
 	key := buildPreviewFilterKey(filter, limit, offset)
@@ -148,7 +181,7 @@ func (c *moviesPreviewCache) CacheFilteredRequest(ctx context.Context, filter Mo
 }
 
 type cachedMoviePreview struct {
-	ID          int32    `json:"-"`
+	ID          int32    `json:"id"`
 	TitleRU     string   `json:"title_ru"`
 	TitleEN     string   `json:"title_en"`
 	Description string   `json:"description"`

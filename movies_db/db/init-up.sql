@@ -13,12 +13,12 @@ CREATE TABLE movies (
     title_en TEXT,
     description TEXT NOT NULL,
     short_description TEXT NOT NULL,
-    duration INT NOT NULL,
+    duration INT NOT NULL CHECK (duration > 0),
     poster_picture_id TEXT,
     background_picture_id TEXT,
     preview_poster_picture_id TEXT,
     age_rating_id INT,
-    release_year SMALLINT NOT NULL
+    release_year SMALLINT NOT NULL  CHECK (release_year > 1700 AND  release_year<=date_part('year', CURRENT_DATE))
 );
 
 CREATE TABLE genres (
@@ -27,8 +27,8 @@ CREATE TABLE genres (
 );
 
 CREATE TABLE movies_genres (
-    movie_id INT REFERENCES movies(id),
-    genre_id INT REFERENCES genres(id),
+    movie_id INT REFERENCES movies(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    genre_id INT REFERENCES genres(id) ON DELETE CASCADE ON UPDATE CASCADE,
     PRIMARY KEY(movie_id,genre_id)
 );
 
@@ -38,8 +38,8 @@ CREATE TABLE countries (
 );
 
 CREATE TABLE movies_countries (
-    movie_id INT REFERENCES movies(id),
-    country_id INT REFERENCES countries(id),
+    movie_id INT REFERENCES movies(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    country_id INT REFERENCES countries(id) ON DELETE CASCADE ON UPDATE CASCADE,
     PRIMARY KEY(movie_id,country_id)
 );
 

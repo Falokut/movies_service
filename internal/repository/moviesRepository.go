@@ -65,15 +65,15 @@ func (r *moviesRepository) GetMovie(ctx context.Context, movieId int32) (Movie, 
 	return movie, nil
 }
 
-func (r *moviesRepository) GetMoviesPreview(ctx context.Context, filter MoviesFilter, limit, offset uint32) ([]string, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "moviesRepository.GetMoviesPreview")
+func (r *moviesRepository) GetMoviesPreviewIds(ctx context.Context, filter MoviesFilter, limit, offset uint32) ([]string, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "moviesRepository.GetMoviesPreviewIds")
 	defer span.Finish()
 
 	var err error
 	defer span.SetTag("error", err != nil)
 
-	query := fmt.Sprintf("SELECT %[1]s.id AS id FROM %[1]s LEFT JOIN %[2]s ON age_rating_id=%[2]s.id "+
-		"%[3]s ORDER BY id LIMIT %[4]d OFFSET %[5]d;", moviesTableName, ageRatingsTableName, convertFilterToWhere(filter),
+	query := fmt.Sprintf("SELECT %[1]s.id FROM %[1]s LEFT JOIN %[2]s ON age_rating_id=%[2]s.id "+
+		"%[3]s ORDER BY %[1]s.id LIMIT %[4]d OFFSET %[5]d;", moviesTableName, ageRatingsTableName, convertFilterToWhere(filter),
 		limit, offset)
 	var ids []string
 	err = r.db.SelectContext(ctx, &ids, query)
@@ -83,7 +83,6 @@ func (r *moviesRepository) GetMoviesPreview(ctx context.Context, filter MoviesFi
 	}
 
 	return ids, nil
-
 }
 
 // if any filter param filled, return string with WHERE statement
@@ -126,7 +125,7 @@ func getGenresFilter(ids string, first bool) (string, bool) {
 		return "", first
 	}
 
-	filter := fmt.Sprintf("id=ANY(SELECT movie_id FROM %s WHERE genre_id=ANY(ARRAY[%s]))", moviesGenresTableName, ids)
+	filter := fmt.Sprintf("%s.id=ANY(SELECT movie_id FROM %s WHERE genre_id=ANY(ARRAY[%s]))", moviesTableName, moviesGenresTableName, ids)
 	if first {
 		first = false
 	} else {
@@ -140,7 +139,7 @@ func getCountriesFilter(ids string, first bool) (string, bool) {
 		return "", first
 	}
 
-	filter := fmt.Sprintf("id=ANY(SELECT movie_id FROM %s WHERE country_id=ANY(ARRAY[%s]))", moviesCountriesTableName, ids)
+	filter := fmt.Sprintf("%s.id=ANY(SELECT movie_id FROM %s WHERE country_id=ANY(ARRAY[%s]))", moviesTableName, moviesCountriesTableName, ids)
 	if first {
 		first = false
 	} else {
@@ -176,8 +175,29 @@ func (r *moviesRepository) GetMoviePreview(ctx context.Context, movieId int32) (
 		return MoviePreview{}, ErrNotFound
 	}
 	if err != nil {
+		r.logger.Errorf("error: %v query: %s args: %v", err, query, movieId)
 		return MoviePreview{}, err
 	}
 
 	return movie, nil
+}
+
+func (r *moviesRepository) GetMovies(ctx context.Context, ids []int32) ([]MoviePreview, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "moviesRepository.GetMovies")
+	defer span.Finish()
+
+	var err error
+	defer span.SetTag("error", err != nil)
+
+	query := fmt.Sprintf("SELECT %[1]s.id, title_ru, title_en, duration, preview_poster_picture_id,"+
+		"short_description, release_year, COALESCE(%[2]s.name,'') AS age_rating "+
+		"FROM %[1]s LEFT JOIN %[2]s ON age_rating_id=%[2]s.id WHERE %[1]s.id=ANY($1)", moviesTableName, ageRatingsTableName)
+	var movies []MoviePreview
+	err = r.db.SelectContext(ctx, &movies, query, ids)
+	if err != nil {
+		r.logger.Errorf("error: %v query: %s args: %v", err, query, ids)
+		return []MoviePreview{}, err
+	}
+
+	return movies, nil
 }

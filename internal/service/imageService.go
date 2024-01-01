@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/url"
 
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -23,9 +22,6 @@ func NewImageService(logger *logrus.Logger) *imageService {
 
 // Returns picture url for GET request
 func (s *imageService) GetPictureURL(ctx context.Context, pictureID, baseUrl, category string) string {
-	span, _ := opentracing.StartSpanFromContext(ctx, "imageService.GetPictureURL")
-	defer span.Finish()
-
 	if pictureID == "" || baseUrl == "" || category == "" {
 		return ""
 	}
