@@ -56,6 +56,12 @@ service moviesServiceV1 {
     
     rpc GetMoviesPreview(GetMoviesPreviewRequest) returns(MoviesPreview) {
         option (google.api.http) = {
+            get: "/v1/movies/preview/search"
+        };
+    }
+
+    rpc GetMoviesPreviewByIDs(GetMoviesPreviewByIDsRequest) returns(MoviesPreview) {
+        option (google.api.http) = {
             get: "/v1/movies/preview"
         };
     }

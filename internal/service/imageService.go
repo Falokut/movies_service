@@ -1,7 +1,6 @@
 package service
 
 import (
-	"context"
 	"net/url"
 
 	"github.com/sirupsen/logrus"
@@ -21,7 +20,7 @@ func NewImageService(logger *logrus.Logger) *imageService {
 }
 
 // Returns picture url for GET request
-func (s *imageService) GetPictureURL(ctx context.Context, pictureID, baseUrl, category string) string {
+func (s *imageService) GetPictureURL(pictureID, baseUrl, category string) string {
 	if pictureID == "" || baseUrl == "" || category == "" {
 		return ""
 	}

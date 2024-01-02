@@ -25,6 +25,7 @@ const _ = grpc.SupportPackageIsVersion7
 type MoviesServiceV1Client interface {
 	GetMovie(ctx context.Context, in *GetMovieRequest, opts ...grpc.CallOption) (*Movie, error)
 	GetMoviesPreview(ctx context.Context, in *GetMoviesPreviewRequest, opts ...grpc.CallOption) (*MoviesPreview, error)
+	GetMoviesPreviewByIDs(ctx context.Context, in *GetMoviesPreviewByIDsRequest, opts ...grpc.CallOption) (*MoviesPreview, error)
 	GetAgeRatings(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*AgeRatings, error)
 	GetGenres(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Genres, error)
 	GetCountries(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Countries, error)
@@ -50,6 +51,15 @@ func (c *moviesServiceV1Client) GetMovie(ctx context.Context, in *GetMovieReques
 func (c *moviesServiceV1Client) GetMoviesPreview(ctx context.Context, in *GetMoviesPreviewRequest, opts ...grpc.CallOption) (*MoviesPreview, error) {
 	out := new(MoviesPreview)
 	err := c.cc.Invoke(ctx, "/movies_service.moviesServiceV1/GetMoviesPreview", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *moviesServiceV1Client) GetMoviesPreviewByIDs(ctx context.Context, in *GetMoviesPreviewByIDsRequest, opts ...grpc.CallOption) (*MoviesPreview, error) {
+	out := new(MoviesPreview)
+	err := c.cc.Invoke(ctx, "/movies_service.moviesServiceV1/GetMoviesPreviewByIDs", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -89,6 +99,7 @@ func (c *moviesServiceV1Client) GetCountries(ctx context.Context, in *emptypb.Em
 type MoviesServiceV1Server interface {
 	GetMovie(context.Context, *GetMovieRequest) (*Movie, error)
 	GetMoviesPreview(context.Context, *GetMoviesPreviewRequest) (*MoviesPreview, error)
+	GetMoviesPreviewByIDs(context.Context, *GetMoviesPreviewByIDsRequest) (*MoviesPreview, error)
 	GetAgeRatings(context.Context, *emptypb.Empty) (*AgeRatings, error)
 	GetGenres(context.Context, *emptypb.Empty) (*Genres, error)
 	GetCountries(context.Context, *emptypb.Empty) (*Countries, error)
@@ -104,6 +115,9 @@ func (UnimplementedMoviesServiceV1Server) GetMovie(context.Context, *GetMovieReq
 }
 func (UnimplementedMoviesServiceV1Server) GetMoviesPreview(context.Context, *GetMoviesPreviewRequest) (*MoviesPreview, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetMoviesPreview not implemented")
+}
+func (UnimplementedMoviesServiceV1Server) GetMoviesPreviewByIDs(context.Context, *GetMoviesPreviewByIDsRequest) (*MoviesPreview, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetMoviesPreviewByIDs not implemented")
 }
 func (UnimplementedMoviesServiceV1Server) GetAgeRatings(context.Context, *emptypb.Empty) (*AgeRatings, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAgeRatings not implemented")
@@ -159,6 +173,24 @@ func _MoviesServiceV1_GetMoviesPreview_Handler(srv interface{}, ctx context.Cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MoviesServiceV1Server).GetMoviesPreview(ctx, req.(*GetMoviesPreviewRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MoviesServiceV1_GetMoviesPreviewByIDs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetMoviesPreviewByIDsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MoviesServiceV1Server).GetMoviesPreviewByIDs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/movies_service.moviesServiceV1/GetMoviesPreviewByIDs",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MoviesServiceV1Server).GetMoviesPreviewByIDs(ctx, req.(*GetMoviesPreviewByIDsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -231,6 +263,10 @@ var MoviesServiceV1_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetMoviesPreview",
 			Handler:    _MoviesServiceV1_GetMoviesPreview_Handler,
+		},
+		{
+			MethodName: "GetMoviesPreviewByIDs",
+			Handler:    _MoviesServiceV1_GetMoviesPreviewByIDs_Handler,
 		},
 		{
 			MethodName: "GetAgeRatings",

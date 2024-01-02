@@ -17,7 +17,7 @@ import (
 
 //go:generate mockgen -source=service.go -destination=mocks/service.go
 type ImagesService interface {
-	GetPictureURL(ctx context.Context, pictureID, baseUrl, category string) string
+	GetPictureURL(pictureID, baseUrl, category string) string
 }
 
 type PicturesUrlConfig struct {
@@ -60,7 +60,7 @@ func (s *MoviesService) GetMovie(ctx context.Context, in *movies_service.GetMovi
 	}
 
 	span.SetTag("grpc.status", codes.OK)
-	return s.convertDbMovieToProto(ctx, movie), nil
+	return s.convertDbMovieToProto(movie), nil
 }
 
 func (s *MoviesService) GetAgeRatings(ctx context.Context, in *emptypb.Empty) (*movies_service.AgeRatings, error) {
@@ -86,11 +86,11 @@ func (s *MoviesService) GetMoviesPreview(ctx context.Context, in *movies_service
 	}
 
 	filter := repository.MoviesFilter{
-		MoviesIDs:    ReplaceAll(in.GetMoviesIDs()),
-		GenresIDs:    ReplaceAll(in.GetGenresIDs()),
-		CountriesIDs: ReplaceAll(in.GetCountriesIDs()),
+		MoviesIDs:    ReplaceAllDoubleQuotes(in.GetMoviesIDs()),
+		GenresIDs:    ReplaceAllDoubleQuotes(in.GetGenresIDs()),
+		CountriesIDs: ReplaceAllDoubleQuotes(in.GetCountriesIDs()),
 		AgeRating:    GetAgeRatingsFilter(in.GetAgeRatings()),
-		Title:        ReplaceAll(in.GetTitle()),
+		Title:        ReplaceAllDoubleQuotes(in.GetTitle()),
 	}
 	s.logger.Print(filter.AgeRating)
 	if in.Limit == 0 {
@@ -111,7 +111,39 @@ func (s *MoviesService) GetMoviesPreview(ctx context.Context, in *movies_service
 	}
 	movies := make(map[int32]*movies_service.MoviePreview, len(Movies))
 	for _, movie := range Movies {
-		movies[movie.ID] = s.convertDbMoviePreviewToProto(ctx, movie)
+		movies[movie.ID] = s.convertDbMoviePreviewToProto(movie)
+	}
+
+	span.SetTag("grpc.status", codes.OK)
+	return &movies_service.MoviesPreview{Movies: movies}, nil
+}
+
+func (s *MoviesService) GetMoviesPreviewByIDs(ctx context.Context,
+	in *movies_service.GetMoviesPreviewByIDsRequest) (*movies_service.MoviesPreview, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "MoviesService.GetMoviesPreviewByIDs")
+	defer span.Finish()
+	if in.MoviesIDs == "" {
+		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrInvalidArgument, "movies_ids mustn't be empty")
+	}
+	err := checkFilterParam(in.MoviesIDs)
+	if errors.Is(err, ErrInvalidFilter) {
+		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrInvalidArgument, err.Error())
+	}
+
+	Movies, err := s.repoManager.GetMoviesPreviewByIDs(ctx,
+		strings.Split(ReplaceAllDoubleQuotes(in.MoviesIDs), ","))
+	if errors.Is(err, repository.ErrNotFound) {
+		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrNotFound, "")
+	}
+	if err != nil {
+		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrInternal, err.Error())
+	}
+	if len(Movies) == 0 {
+		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrNotFound, "")
+	}
+	movies := make(map[int32]*movies_service.MoviePreview, len(Movies))
+	for _, movie := range Movies {
+		movies[movie.ID] = s.convertDbMoviePreviewToProto(movie)
 	}
 
 	span.SetTag("grpc.status", codes.OK)
@@ -153,7 +185,7 @@ func (s *MoviesService) GetCountries(ctx context.Context, in *emptypb.Empty) (*m
 }
 
 func GetAgeRatingsFilter(ageRating string) string {
-	ageRating = ReplaceAll(strings.ReplaceAll(ageRating, " ", ""))
+	ageRating = ReplaceAllDoubleQuotes(strings.ReplaceAll(ageRating, " ", ""))
 	str := strings.Split(ageRating, ",")
 	for i := 0; i < len(str); i++ {
 		if num, err := strconv.Atoi(str[i]); err == nil {
@@ -163,22 +195,21 @@ func GetAgeRatingsFilter(ageRating string) string {
 	return strings.Join(str, ",")
 }
 
-func (s *MoviesService) convertDbMoviePreviewToProto(ctx context.Context, movie repository.MoviePreview) *movies_service.MoviePreview {
+func (s *MoviesService) convertDbMoviePreviewToProto(movie repository.MoviePreview) *movies_service.MoviePreview {
 	return &movies_service.MoviePreview{
-		TitleRU:   movie.TitleRU,
-		TitleEN:   movie.TitleEN.String,
-		Genres:    movie.Genres,
-		Countries: movie.Countries,
-		Duration:  movie.Duration,
-		PreviewPosterURL: s.imagesService.GetPictureURL(ctx,
-			movie.PreviewPosterID.String, s.picturesCfg.BaseUrl, s.picturesCfg.PreviewPostersCategory),
+		TitleRU:          movie.TitleRU,
+		TitleEN:          movie.TitleEN.String,
+		Genres:           movie.Genres,
+		Countries:        movie.Countries,
+		Duration:         movie.Duration,
+		PreviewPosterURL: s.imagesService.GetPictureURL(movie.PreviewPosterID.String, s.picturesCfg.BaseUrl, s.picturesCfg.PreviewPostersCategory),
 		ShortDescription: movie.ShortDescription,
 		ReleaseYear:      movie.ReleaseYear,
 		AgeRating:        movie.AgeRating,
 	}
 }
 
-func (s *MoviesService) convertDbMovieToProto(ctx context.Context, movie repository.Movie) *movies_service.Movie {
+func (s *MoviesService) convertDbMovieToProto(movie repository.Movie) *movies_service.Movie {
 	return &movies_service.Movie{
 		Description: movie.Description,
 		TitleRU:     movie.TitleRU,
@@ -186,15 +217,15 @@ func (s *MoviesService) convertDbMovieToProto(ctx context.Context, movie reposit
 		Genres:      movie.Genres,
 		Duration:    movie.Duration,
 		Countries:   movie.Countries,
-		PosterURL: s.imagesService.GetPictureURL(ctx,
-			movie.PosterID.String, s.picturesCfg.BaseUrl, s.picturesCfg.PostersCategory),
-		BackgroundURL: s.imagesService.GetPictureURL(ctx,
-			movie.BackgroundPictureID.String, s.picturesCfg.BaseUrl, s.picturesCfg.BackgroundsCategory),
+		PosterURL: s.imagesService.GetPictureURL(movie.PosterID.String,
+			s.picturesCfg.BaseUrl, s.picturesCfg.PostersCategory),
+		BackgroundURL: s.imagesService.GetPictureURL(movie.BackgroundPictureID.String,
+			s.picturesCfg.BaseUrl, s.picturesCfg.BackgroundsCategory),
 		ReleaseYear: movie.ReleaseYear,
 		AgeRating:   movie.AgeRating,
 	}
 }
 
-func ReplaceAll(str string) string {
+func ReplaceAllDoubleQuotes(str string) string {
 	return strings.ReplaceAll(str, `"`, "")
 }

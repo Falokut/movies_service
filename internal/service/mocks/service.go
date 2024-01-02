@@ -5,7 +5,6 @@
 package mock_service
 
 import (
-	context "context"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -35,15 +34,15 @@ func (m *MockImagesService) EXPECT() *MockImagesServiceMockRecorder {
 }
 
 // GetPictureURL mocks base method.
-func (m *MockImagesService) GetPictureURL(ctx context.Context, pictureID, baseUrl, category string) string {
+func (m *MockImagesService) GetPictureURL(pictureID, baseUrl, category string) string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPictureURL", ctx, pictureID, baseUrl, category)
+	ret := m.ctrl.Call(m, "GetPictureURL", pictureID, baseUrl, category)
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
 // GetPictureURL indicates an expected call of GetPictureURL.
-func (mr *MockImagesServiceMockRecorder) GetPictureURL(ctx, pictureID, baseUrl, category interface{}) *gomock.Call {
+func (mr *MockImagesServiceMockRecorder) GetPictureURL(pictureID, baseUrl, category interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPictureURL", reflect.TypeOf((*MockImagesService)(nil).GetPictureURL), ctx, pictureID, baseUrl, category)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPictureURL", reflect.TypeOf((*MockImagesService)(nil).GetPictureURL), pictureID, baseUrl, category)
 }

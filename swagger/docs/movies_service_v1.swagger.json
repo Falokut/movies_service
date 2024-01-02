@@ -171,6 +171,49 @@
     },
     "/v1/movies/preview": {
       "get": {
+        "operationId": "moviesServiceV1_GetMoviesPreviewByIDs",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/movies_serviceMoviesPreview"
+            }
+          },
+          "404": {
+            "description": "Returned when the resource does not exist.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          },
+          "500": {
+            "description": "Something went wrong.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "movies_ids",
+            "description": "for multiple values use ',' separator",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "moviesServiceV1"
+        ]
+      }
+    },
+    "/v1/movies/preview/search": {
+      "get": {
         "operationId": "moviesServiceV1_GetMoviesPreview",
         "responses": {
           "200": {

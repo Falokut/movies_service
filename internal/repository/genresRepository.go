@@ -70,7 +70,7 @@ func (r *genresRepository) GetGenresForMovies(ctx context.Context, ids []string)
 	defer span.SetTag("error", err != nil)
 
 	query := fmt.Sprintf("SELECT movie_id, ARRAY_AGG(name) FROM %s JOIN %s ON genre_id=id "+
-		"WHERE movie_id=ANY(ARRAY[%s]) GROUP BY movie_id ORDER BY movie_id",
+		"WHERE movie_id=ANY(ARRAY[%s]) GROUP BY movie_id",
 		moviesGenresTableName, genresTableName, strings.Join(ids, ","))
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {

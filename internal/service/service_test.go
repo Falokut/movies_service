@@ -79,7 +79,7 @@ func newClient(t *testing.T, s *service.MoviesService) *grpc.ClientConn {
 type GetMovieBehavior func(m *repo_mock.MockMoviesRepositoryManager, ctx context.Context, movieId int32, expectedMovie repository.Movie)
 type GetMoviesPreviewBehavior func(m *repo_mock.MockMoviesRepositoryManager, ctx context.Context, filter repository.MoviesFilter,
 	expectedMovies []repository.MoviePreview, limit, offset uint32)
-type GetPictureURLMultipleBehavior func(s *service_mock.MockImagesService, ctx context.Context, PicturesIDs []string, times int)
+type GetPictureURLMultipleBehavior func(s *service_mock.MockImagesService, PicturesIDs []string, times int)
 
 func TestGetMovie(t *testing.T) {
 	testCases := []struct {
@@ -98,8 +98,8 @@ func TestGetMovie(t *testing.T) {
 			behavior: func(m *repo_mock.MockMoviesRepositoryManager, ctx context.Context, movieId int32, expectedMovie repository.Movie) {
 				m.EXPECT().GetMovie(gomock.Any(), movieId).Return(repository.Movie{}, repository.ErrNotFound).Times(1)
 			},
-			imgBehavior: func(s *service_mock.MockImagesService, ctx context.Context, PicturesIDs []string, times int) {
-				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(times)
+			imgBehavior: func(s *service_mock.MockImagesService, PicturesIDs []string, times int) {
+				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any(), gomock.Any()).Times(times)
 			},
 			expectedStatus:   codes.NotFound,
 			expectedError:    service.ErrNotFound,
@@ -111,8 +111,8 @@ func TestGetMovie(t *testing.T) {
 			behavior: func(m *repo_mock.MockMoviesRepositoryManager, ctx context.Context, movieId int32, expectedMovie repository.Movie) {
 				m.EXPECT().GetMovie(gomock.Any(), movieId).Return(repository.Movie{}, context.Canceled).Times(1)
 			},
-			imgBehavior: func(s *service_mock.MockImagesService, ctx context.Context, PicturesIDs []string, times int) {
-				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(times)
+			imgBehavior: func(s *service_mock.MockImagesService, PicturesIDs []string, times int) {
+				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any(), gomock.Any()).Times(times)
 			},
 			expectedStatus:   codes.Internal,
 			expectedError:    service.ErrInternal,
@@ -141,8 +141,8 @@ func TestGetMovie(t *testing.T) {
 			behavior: func(m *repo_mock.MockMoviesRepositoryManager, ctx context.Context, movieId int32, expectedMovie repository.Movie) {
 				m.EXPECT().GetMovie(gomock.Any(), movieId).Return(expectedMovie, nil).Times(1)
 			},
-			imgBehavior: func(s *service_mock.MockImagesService, ctx context.Context, PicturesIDs []string, times int) {
-				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("someurl").Times(times)
+			imgBehavior: func(s *service_mock.MockImagesService, PicturesIDs []string, times int) {
+				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any(), gomock.Any()).Return("someurl").Times(times)
 			},
 			urlRequestTimes: 2,
 			expectedStatus:  codes.OK,
@@ -173,8 +173,8 @@ func TestGetMovie(t *testing.T) {
 			behavior: func(m *repo_mock.MockMoviesRepositoryManager, ctx context.Context, movieId int32, expectedMovie repository.Movie) {
 				m.EXPECT().GetMovie(gomock.Any(), movieId).Return(expectedMovie, nil).Times(1)
 			},
-			imgBehavior: func(s *service_mock.MockImagesService, ctx context.Context, PicturesIDs []string, times int) {
-				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("someurl").Times(times)
+			imgBehavior: func(s *service_mock.MockImagesService, PicturesIDs []string, times int) {
+				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any(), gomock.Any()).Return("someurl").Times(times)
 			},
 			expectedStatus: codes.OK,
 			msg:            "Test case num %d, must return expected responce, if repo manager doesn't return error, service shouldn't change data, except for the link to the poster",
@@ -185,7 +185,7 @@ func TestGetMovie(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		repo := repo_mock.NewMockMoviesRepositoryManager(ctrl)
 		imgServ := service_mock.NewMockImagesService(ctrl)
-		testCase.imgBehavior(imgServ, context.Background(), []string{testCase.movie.PosterID.String, testCase.movie.BackgroundPictureID.String}, testCase.urlRequestTimes)
+		testCase.imgBehavior(imgServ, []string{testCase.movie.PosterID.String, testCase.movie.BackgroundPictureID.String}, testCase.urlRequestTimes)
 		testCase.behavior(repo, context.Background(), testCase.movieID, testCase.movie)
 
 		conn := newClient(t, service.NewMoviesService(getNullLogger(), repo, imgServ, service.PicturesUrlConfig{}))
@@ -242,8 +242,8 @@ func TestGetMoviesPreview(t *testing.T) {
 				expectedMovies []repository.MoviePreview, limit, offset uint32) {
 				m.EXPECT().GetMoviesPreview(gomock.Any(), filter, limit, offset).Return([]repository.MoviePreview{}, repository.ErrNotFound).Times(1)
 			},
-			imgBehavior: func(s *service_mock.MockImagesService, ctx context.Context, PicturesIDs []string, times int) {
-				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(times)
+			imgBehavior: func(s *service_mock.MockImagesService, PicturesIDs []string, times int) {
+				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any(), gomock.Any()).Times(times)
 			},
 			expectedStatus:   codes.NotFound,
 			expectedError:    service.ErrNotFound,
@@ -256,8 +256,8 @@ func TestGetMoviesPreview(t *testing.T) {
 				expectedMovies []repository.MoviePreview, limit, offset uint32) {
 				m.EXPECT().GetMoviesPreview(gomock.Any(), filter, limit, offset).Return([]repository.MoviePreview{}, context.Canceled).Times(1)
 			},
-			imgBehavior: func(s *service_mock.MockImagesService, ctx context.Context, PicturesIDs []string, times int) {
-				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(times)
+			imgBehavior: func(s *service_mock.MockImagesService, PicturesIDs []string, times int) {
+				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any(), gomock.Any()).Times(times)
 			},
 			expectedStatus:   codes.Internal,
 			expectedError:    service.ErrInternal,
@@ -313,8 +313,8 @@ func TestGetMoviesPreview(t *testing.T) {
 				expectedMovies []repository.MoviePreview, limit, offset uint32) {
 				m.EXPECT().GetMoviesPreview(gomock.Any(), filter, limit, offset).Return(expectedMovies, nil).Times(1)
 			},
-			imgBehavior: func(s *service_mock.MockImagesService, ctx context.Context, PicturesIDs []string, times int) {
-				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("").Times(times)
+			imgBehavior: func(s *service_mock.MockImagesService, PicturesIDs []string, times int) {
+				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any(), gomock.Any()).Return("").Times(times)
 			},
 			expectedStatus: codes.OK,
 			msg:            "Test case num %d, must return expected responce, if repo manager doesn't return error, service shouldn't change data, except for the link to the poster",
@@ -325,8 +325,8 @@ func TestGetMoviesPreview(t *testing.T) {
 				expectedMovies []repository.MoviePreview, limit, offset uint32) {
 				m.EXPECT().GetMoviesPreview(gomock.Any(), filter, limit, offset).Return([]repository.MoviePreview{}, context.Canceled).Times(1)
 			},
-			imgBehavior: func(s *service_mock.MockImagesService, ctx context.Context, PicturesIDs []string, times int) {
-				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(times)
+			imgBehavior: func(s *service_mock.MockImagesService, PicturesIDs []string, times int) {
+				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any(), gomock.Any()).Times(times)
 			},
 			expectedStatus:   codes.Internal,
 			expectedError:    service.ErrInternal,
@@ -349,8 +349,8 @@ func TestGetMoviesPreview(t *testing.T) {
 				expectedMovies []repository.MoviePreview, limit, offset uint32) {
 				m.EXPECT().GetMoviesPreview(gomock.Any(), filter, limit, offset).Return(expectedMovies, nil).Times(1)
 			},
-			imgBehavior: func(s *service_mock.MockImagesService, ctx context.Context, PicturesIDs []string, times int) {
-				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("").Times(times)
+			imgBehavior: func(s *service_mock.MockImagesService, PicturesIDs []string, times int) {
+				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any(), gomock.Any()).Return("").Times(times)
 			},
 			expectedStatus: codes.NotFound,
 			expectedError:  service.ErrNotFound,
@@ -405,8 +405,8 @@ func TestGetMoviesPreview(t *testing.T) {
 				expectedMovies []repository.MoviePreview, limit, offset uint32) {
 				m.EXPECT().GetMoviesPreview(gomock.Any(), filter, limit, offset).Return(expectedMovies, nil).Times(1)
 			},
-			imgBehavior: func(s *service_mock.MockImagesService, ctx context.Context, PicturesIDs []string, times int) {
-				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("").Times(times)
+			imgBehavior: func(s *service_mock.MockImagesService, PicturesIDs []string, times int) {
+				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any(), gomock.Any()).Return("").Times(times)
 			},
 			expectedStatus: codes.OK,
 			msg: "Test case num %d, must return expected responce, limit should be in [10,100]," +
@@ -458,8 +458,8 @@ func TestGetMoviesPreview(t *testing.T) {
 				expectedMovies []repository.MoviePreview, limit, offset uint32) {
 				m.EXPECT().GetMoviesPreview(gomock.Any(), filter, limit, offset).Return(expectedMovies, nil).Times(0)
 			},
-			imgBehavior: func(s *service_mock.MockImagesService, ctx context.Context, PicturesIDs []string, times int) {
-				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("").Times(times)
+			imgBehavior: func(s *service_mock.MockImagesService, PicturesIDs []string, times int) {
+				s.EXPECT().GetPictureURL(gomock.Any(), gomock.Any(), gomock.Any()).Return("").Times(times)
 			},
 			expectedStatus: codes.InvalidArgument,
 			expectedError:  service.ErrInvalidFilter,
@@ -476,7 +476,7 @@ func TestGetMoviesPreview(t *testing.T) {
 		for _, movie := range testCase.movies {
 			picturesIds = append(picturesIds, movie.PreviewPosterID.String)
 		}
-		testCase.imgBehavior(imgServ, context.Background(), picturesIds, testCase.urlRequestTimes)
+		testCase.imgBehavior(imgServ, picturesIds, testCase.urlRequestTimes)
 		var limit = testCase.request.Limit
 		if limit == 0 {
 			limit = 10

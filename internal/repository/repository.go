@@ -58,6 +58,7 @@ type MoviesRepositoryManager interface {
 	GetMovie(ctx context.Context, movieId int32) (Movie, error)
 	GetMoviePreview(ctx context.Context, movieId int32) (MoviePreview, error)
 	GetMoviesPreview(ctx context.Context, Filter MoviesFilter, limit, offset uint32) ([]MoviePreview, error)
+	GetMoviesPreviewByIDs(ctx context.Context, ids []string) ([]MoviePreview, error)
 	GetAgeRatings(ctx context.Context) ([]string, error)
 	GetGenres(ctx context.Context, movieId int32) ([]string, error)
 	GetAllGenres(ctx context.Context) ([]Genre, error)

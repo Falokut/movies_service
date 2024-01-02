@@ -694,6 +694,54 @@ func (x *Movie) GetAgeRating() string {
 	return ""
 }
 
+type GetMoviesPreviewByIDsRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// for multiple values use ',' separator
+	MoviesIDs string `protobuf:"bytes,1,opt,name=moviesIDs,json=movies_ids,proto3" json:"moviesIDs,omitempty"`
+}
+
+func (x *GetMoviesPreviewByIDsRequest) Reset() {
+	*x = GetMoviesPreviewByIDsRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_movies_service_v1_messages_proto_msgTypes[10]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GetMoviesPreviewByIDsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetMoviesPreviewByIDsRequest) ProtoMessage() {}
+
+func (x *GetMoviesPreviewByIDsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_movies_service_v1_messages_proto_msgTypes[10]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetMoviesPreviewByIDsRequest.ProtoReflect.Descriptor instead.
+func (*GetMoviesPreviewByIDsRequest) Descriptor() ([]byte, []int) {
+	return file_movies_service_v1_messages_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *GetMoviesPreviewByIDsRequest) GetMoviesIDs() string {
+	if x != nil {
+		return x.MoviesIDs
+	}
+	return ""
+}
+
 type UserErrorMessage struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -705,7 +753,7 @@ type UserErrorMessage struct {
 func (x *UserErrorMessage) Reset() {
 	*x = UserErrorMessage{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_movies_service_v1_messages_proto_msgTypes[10]
+		mi := &file_movies_service_v1_messages_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -718,7 +766,7 @@ func (x *UserErrorMessage) String() string {
 func (*UserErrorMessage) ProtoMessage() {}
 
 func (x *UserErrorMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_movies_service_v1_messages_proto_msgTypes[10]
+	mi := &file_movies_service_v1_messages_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -731,7 +779,7 @@ func (x *UserErrorMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserErrorMessage.ProtoReflect.Descriptor instead.
 func (*UserErrorMessage) Descriptor() ([]byte, []int) {
-	return file_movies_service_v1_messages_proto_rawDescGZIP(), []int{10}
+	return file_movies_service_v1_messages_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *UserErrorMessage) GetMessage() string {
@@ -836,12 +884,16 @@ var file_movies_service_v1_messages_proto_rawDesc = []byte{
 	0x65, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x59, 0x65, 0x61, 0x72, 0x18, 0x09, 0x20, 0x01, 0x28, 0x05,
 	0x52, 0x0c, 0x72, 0x65, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x5f, 0x79, 0x65, 0x61, 0x72, 0x12, 0x1d,
 	0x0a, 0x09, 0x61, 0x67, 0x65, 0x52, 0x61, 0x74, 0x69, 0x6e, 0x67, 0x18, 0x0a, 0x20, 0x01, 0x28,
-	0x09, 0x52, 0x0a, 0x61, 0x67, 0x65, 0x5f, 0x72, 0x61, 0x74, 0x69, 0x6e, 0x67, 0x22, 0x2c, 0x0a,
-	0x10, 0x55, 0x73, 0x65, 0x72, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67,
-	0x65, 0x12, 0x18, 0x0a, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x18, 0x01, 0x20, 0x01,
-	0x28, 0x09, 0x52, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x42, 0x1a, 0x5a, 0x18, 0x6d,
-	0x6f, 0x76, 0x69, 0x65, 0x73, 0x5f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2f, 0x76, 0x31,
-	0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x09, 0x52, 0x0a, 0x61, 0x67, 0x65, 0x5f, 0x72, 0x61, 0x74, 0x69, 0x6e, 0x67, 0x22, 0x3d, 0x0a,
+	0x1c, 0x47, 0x65, 0x74, 0x4d, 0x6f, 0x76, 0x69, 0x65, 0x73, 0x50, 0x72, 0x65, 0x76, 0x69, 0x65,
+	0x77, 0x42, 0x79, 0x49, 0x44, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1d, 0x0a,
+	0x09, 0x6d, 0x6f, 0x76, 0x69, 0x65, 0x73, 0x49, 0x44, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x0a, 0x6d, 0x6f, 0x76, 0x69, 0x65, 0x73, 0x5f, 0x69, 0x64, 0x73, 0x22, 0x2c, 0x0a, 0x10,
+	0x55, 0x73, 0x65, 0x72, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65,
+	0x12, 0x18, 0x0a, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x42, 0x1a, 0x5a, 0x18, 0x6d, 0x6f,
+	0x76, 0x69, 0x65, 0x73, 0x5f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2f, 0x76, 0x31, 0x2f,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -856,23 +908,24 @@ func file_movies_service_v1_messages_proto_rawDescGZIP() []byte {
 	return file_movies_service_v1_messages_proto_rawDescData
 }
 
-var file_movies_service_v1_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_movies_service_v1_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_movies_service_v1_messages_proto_goTypes = []interface{}{
-	(*GetMovieRequest)(nil),         // 0: movies_service.GetMovieRequest
-	(*GetMoviesPreviewRequest)(nil), // 1: movies_service.GetMoviesPreviewRequest
-	(*MoviePreview)(nil),            // 2: movies_service.MoviePreview
-	(*MoviesPreview)(nil),           // 3: movies_service.MoviesPreview
-	(*AgeRatings)(nil),              // 4: movies_service.AgeRatings
-	(*Country)(nil),                 // 5: movies_service.Country
-	(*Countries)(nil),               // 6: movies_service.Countries
-	(*Genre)(nil),                   // 7: movies_service.Genre
-	(*Genres)(nil),                  // 8: movies_service.Genres
-	(*Movie)(nil),                   // 9: movies_service.Movie
-	(*UserErrorMessage)(nil),        // 10: movies_service.UserErrorMessage
-	nil,                             // 11: movies_service.MoviesPreview.MoviesEntry
+	(*GetMovieRequest)(nil),              // 0: movies_service.GetMovieRequest
+	(*GetMoviesPreviewRequest)(nil),      // 1: movies_service.GetMoviesPreviewRequest
+	(*MoviePreview)(nil),                 // 2: movies_service.MoviePreview
+	(*MoviesPreview)(nil),                // 3: movies_service.MoviesPreview
+	(*AgeRatings)(nil),                   // 4: movies_service.AgeRatings
+	(*Country)(nil),                      // 5: movies_service.Country
+	(*Countries)(nil),                    // 6: movies_service.Countries
+	(*Genre)(nil),                        // 7: movies_service.Genre
+	(*Genres)(nil),                       // 8: movies_service.Genres
+	(*Movie)(nil),                        // 9: movies_service.Movie
+	(*GetMoviesPreviewByIDsRequest)(nil), // 10: movies_service.GetMoviesPreviewByIDsRequest
+	(*UserErrorMessage)(nil),             // 11: movies_service.UserErrorMessage
+	nil,                                  // 12: movies_service.MoviesPreview.MoviesEntry
 }
 var file_movies_service_v1_messages_proto_depIdxs = []int32{
-	11, // 0: movies_service.MoviesPreview.movies:type_name -> movies_service.MoviesPreview.MoviesEntry
+	12, // 0: movies_service.MoviesPreview.movies:type_name -> movies_service.MoviesPreview.MoviesEntry
 	5,  // 1: movies_service.Countries.countries:type_name -> movies_service.Country
 	7,  // 2: movies_service.Genres.genres:type_name -> movies_service.Genre
 	2,  // 3: movies_service.MoviesPreview.MoviesEntry.value:type_name -> movies_service.MoviePreview
@@ -1010,6 +1063,18 @@ func file_movies_service_v1_messages_proto_init() {
 			}
 		}
 		file_movies_service_v1_messages_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*GetMoviesPreviewByIDsRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_movies_service_v1_messages_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*UserErrorMessage); i {
 			case 0:
 				return &v.state
@@ -1029,7 +1094,7 @@ func file_movies_service_v1_messages_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_movies_service_v1_messages_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   12,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

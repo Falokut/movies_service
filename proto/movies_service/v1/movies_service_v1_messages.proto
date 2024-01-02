@@ -71,4 +71,9 @@ message Movie {
   string	ageRating  = 10                 [json_name="age_rating"];
 };
 
+message GetMoviesPreviewByIDsRequest {
+  // for multiple values use ',' separator
+  string moviesIDs = 1[json_name="movies_ids"];
+}
+
 message UserErrorMessage { string message = 1 [ json_name = "message" ]; }

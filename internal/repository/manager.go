@@ -336,14 +336,14 @@ func (m *RepositoryManager) getGenresAndCountriesForMovies(ctx context.Context, 
 	return genres, countries, nil
 }
 
-func (m *RepositoryManager) getMoviesPreview(ctx context.Context, ids []string) ([]MoviePreview, error) {
+func (m *RepositoryManager) GetMoviesPreviewByIDs(ctx context.Context, ids []string) ([]MoviePreview, error) {
 	if len(ids) == 1 {
 		id, _ := strconv.Atoi(ids[0])
 		movie, err := m.GetMoviePreview(ctx, int32(id))
 		return []MoviePreview{movie}, err
 	}
 
-	span, ctx := opentracing.StartSpanFromContext(ctx, "RepositoryManager.getMoviesPreview")
+	span, ctx := opentracing.StartSpanFromContext(ctx, "RepositoryManager.GetMoviesPreviewByIDs")
 	defer span.Finish()
 	var err error
 	defer span.SetTag("error", err != nil)
@@ -484,7 +484,7 @@ func (m *RepositoryManager) GetMoviesPreview(ctx context.Context, filter MoviesF
 	}
 
 	m.logger.Info("Filling movies")
-	movies, err := m.getMoviesPreview(ctx, moviesIds)
+	movies, err := m.GetMoviesPreviewByIDs(ctx, moviesIds)
 	if err != nil {
 		return []MoviePreview{}, err
 	}

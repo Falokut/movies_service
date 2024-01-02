@@ -74,7 +74,7 @@ func (r *countriesRepository) GetCountriesForMovies(ctx context.Context, ids []s
 	defer span.SetTag("error", err != nil)
 
 	query := fmt.Sprintf("SELECT movie_id, ARRAY_AGG(name) FROM %s JOIN %s ON country_id=id "+
-		"WHERE movie_id=ANY(ARRAY[%s]) GROUP BY movie_id ORDER BY movie_id",
+		"WHERE movie_id=ANY(ARRAY[%s]) GROUP BY movie_id",
 		moviesCountriesTableName, countriesTableName, strings.Join(ids, ","))
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
