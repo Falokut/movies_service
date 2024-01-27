@@ -1,8 +1,6 @@
 package service
 
 import (
-	"net/url"
-
 	"github.com/sirupsen/logrus"
 )
 
@@ -25,15 +23,5 @@ func (s *imageService) GetPictureURL(pictureID, baseUrl, category string) string
 		return ""
 	}
 
-	u, err := url.Parse(baseUrl)
-	if err != nil {
-		s.logger.Errorf("can't parse url. error: %s", err.Error())
-		return ""
-	}
-
-	q := u.Query()
-	q.Add("image_id", pictureID)
-	q.Add("category", category)
-	u.RawQuery = q.Encode()
-	return u.String()
+	return baseUrl + "/" + category + "/" + pictureID
 }
