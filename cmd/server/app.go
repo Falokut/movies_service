@@ -25,87 +25,96 @@ import (
 func main() {
 	logging.NewEntry(logging.ConsoleOutput)
 	logger := logging.GetLogger()
+	cfg := config.GetConfig()
 
-	appCfg := config.GetConfig()
-	logLevel, err := logrus.ParseLevel(appCfg.LogLevel)
+	logLevel, err := logrus.ParseLevel(cfg.LogLevel)
 	if err != nil {
-		logger.Fatal(err)
+		logger.Error(err)
 	}
 	logger.Logger.SetLevel(logLevel)
 
-	tracer, closer, err := jaegerTracer.InitJaeger(appCfg.JaegerConfig)
+	tracer, closer, err := jaegerTracer.InitJaeger(cfg.JaegerConfig)
 	if err != nil {
-		logger.Fatal("cannot create tracer", err)
+		logger.Errorf("Shutting down, error while creating tracer %v", err)
+		return
 	}
 	logger.Info("Jaeger connected")
 	defer closer.Close()
-
 	opentracing.SetGlobalTracer(tracer)
 
 	logger.Info("Metrics initializing")
-	metric, err := metrics.CreateMetrics(appCfg.PrometheusConfig.Name)
+	metric, err := metrics.CreateMetrics(cfg.PrometheusConfig.Name)
 	if err != nil {
-		logger.Fatal(err)
+		logger.Errorf("Shutting down, error while creating metrics %v", err)
+		return
 	}
 
 	go func() {
 		logger.Info("Metrics server running")
-		if err := metrics.RunMetricServer(appCfg.PrometheusConfig.ServerConfig); err != nil {
-			logger.Fatal(err)
+		if err := metrics.RunMetricServer(cfg.PrometheusConfig.ServerConfig); err != nil {
+			logger.Errorf("Shutting down, error while running metrics server %v", err)
+			return
 		}
 	}()
 
 	logger.Info("Database initializing")
-	moviesDatabase, err := repository.NewPostgreDB(appCfg.DBConfig)
+	moviesDatabase, err := repository.NewPostgreDB(cfg.DBConfig)
 	if err != nil {
-		logger.Fatalf("Shutting down, connection to the database is not established: %s", err.Error())
+		logger.Errorf("Shutting down, connection to the database is not established: %s", err.Error())
+		return
 	}
 
 	logger.Info("Repository initializing")
 	moviesRepo := repository.NewMoviesRepository(moviesDatabase, logger.Logger)
 	defer moviesRepo.Shutdown()
 
-	genresDatabase, err := repository.NewPostgreDB(appCfg.DBConfig)
+	genresDatabase, err := repository.NewPostgreDB(cfg.DBConfig)
 	if err != nil {
-		logger.Fatalf("Shutting down, connection to the database is not established: %s", err.Error())
+		logger.Errorf("Shutting down, connection to the database is not established: %s", err.Error())
+		return
 	}
 	genresRepo := repository.NewGenresRepository(genresDatabase, logger.Logger)
 	defer genresRepo.Shutdown()
 
-	countriesDatabase, err := repository.NewPostgreDB(appCfg.DBConfig)
+	countriesDatabase, err := repository.NewPostgreDB(cfg.DBConfig)
 	if err != nil {
-		logger.Fatalf("Shutting down, connection to the database is not established: %s", err.Error())
+		logger.Errorf("Shutting down, connection to the database is not established: %s", err.Error())
+		return
 	}
 	countriesRepo := repository.NewCountriesRepository(countriesDatabase, logger.Logger)
 	defer countriesRepo.Shutdown()
 
-	ageRatingsDatabase, err := repository.NewPostgreDB(appCfg.DBConfig)
+	ageRatingsDatabase, err := repository.NewPostgreDB(cfg.DBConfig)
 	if err != nil {
-		logger.Fatalf("Shutting down, connection to the database is not established: %s", err.Error())
+		logger.Errorf("Shutting down, connection to the database is not established: %s", err.Error())
+		return
 	}
 	ageRatingsRepo := repository.NewAgeRatingsRepository(ageRatingsDatabase, logger.Logger)
 	defer ageRatingsRepo.Shutdown()
 
-	moviesCache, err := repository.NewMoviesCache(logger.Logger, getMoviesCacheOptions(appCfg))
+	moviesCache, err := repository.NewMoviesCache(logger.Logger, getMoviesCacheOptions(cfg))
 	if err != nil {
-		logger.Fatalf("Shutting down, connection to the movies cache is not established: %s", err.Error())
+		logger.Errorf("Shutting down, connection to the movies cache is not established: %s", err.Error())
+		return
 	}
 	defer moviesCache.Shutdown()
 
-	moviesPreviewCache, err := repository.NewMoviesPreviewCache(logger.Logger, getMoviesPreviewCacheOptions(appCfg))
+	moviesPreviewCache, err := repository.NewMoviesPreviewCache(logger.Logger, getMoviesPreviewCacheOptions(cfg))
 	if err != nil {
-		logger.Fatalf("Shutting down, connection to the movies preview cache is not established: %s", err.Error())
+		logger.Errorf("Shutting down, connection to the movies preview cache is not established: %s", err.Error())
+		return
 	}
 	defer moviesPreviewCache.Shutdown()
 
 	logger.Info("Healthcheck initializing")
 	healthcheckManager := healthcheck.NewHealthManager(logger.Logger,
 		[]healthcheck.HealthcheckResource{moviesDatabase, ageRatingsDatabase, genresDatabase,
-			 countriesDatabase, moviesCache, moviesPreviewCache}, appCfg.HealthcheckPort, nil)
+			countriesDatabase, moviesCache, moviesPreviewCache}, cfg.HealthcheckPort, nil)
 	go func() {
 		logger.Info("Healthcheck server running")
 		if err := healthcheckManager.RunHealthcheckEndpoint(); err != nil {
-			logger.Fatalf("Shutting down, can't run healthcheck endpoint %s", err.Error())
+			logger.Errorf("Shutting down, error while running healthcheck endpoint %s", err.Error())
+			return
 		}
 	}()
 
@@ -114,16 +123,16 @@ func main() {
 	repoManager := repository.NewMoviesRepositoryManager(moviesRepo, moviesCache, moviesRepo,
 		moviesPreviewCache, ageRatingsRepo, genresRepo, countriesRepo, metric,
 		repository.RepositoryManagerConfig{
-			MovieTTL:        appCfg.RepositoryManager.MovieTTL,
-			FilteredTTL:     appCfg.RepositoryManager.FilteredTTL,
-			MoviePreviewTTL: appCfg.RepositoryManager.MoviePreviewTTL,
+			MovieTTL:        cfg.RepositoryManager.MovieTTL,
+			FilteredTTL:     cfg.RepositoryManager.FilteredTTL,
+			MoviePreviewTTL: cfg.RepositoryManager.MoviePreviewTTL,
 		}, logger.Logger)
 	logger.Info("Service initializing")
-	service := service.NewMoviesService(logger.Logger, repoManager, imagesService, appCfg.PicturesUrlConfig)
+	service := service.NewMoviesService(logger.Logger, repoManager, imagesService, cfg.PicturesUrlConfig)
 
 	logger.Info("Server initializing")
 	s := server.NewServer(logger.Logger, service)
-	s.Run(getListenServerConfig(appCfg), metric, nil, nil)
+	s.Run(getListenServerConfig(cfg), metric, nil, nil)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGHUP, syscall.SIGTERM)

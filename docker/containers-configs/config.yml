@@ -7,10 +7,10 @@ listen:
   server_mode: "BOTH"
   
 db_config: 
-  host: "movies_db"
-  port: "5432"
-  username: "movies_service"
-  db_name: "movies_db"
+  host: "host.docker.internal"
+  port: "6439"
+  username: "admin_movies_service"
+  db_name: "movies"
   ssl_mode: "disable"
 
 jaeger:
@@ -36,9 +36,9 @@ movies_preview_cache:
   db: 1
 
 repository_manager:
-  movie_ttl: 10m
-  filtered_ttl: 5m
-  movie_preview_ttl: 10m
+  movie_ttl: 30s
+  filtered_ttl: 30s
+  movie_preview_ttl: 30s
 
 pictures:
   base_url: "http://localhost:80/image"

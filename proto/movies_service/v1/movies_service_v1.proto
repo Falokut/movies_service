@@ -48,36 +48,42 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
 };
 
 service moviesServiceV1 {
+    // Returns movie with the specified id.
     rpc GetMovie(GetMovieRequest) returns(Movie) {
         option (google.api.http) = {
-            get: "/v1/movie"
+            get: "/v1/movie/{movieID}"
         };
     }
-    
+
+    // Returns movies previews with the specified filter.
     rpc GetMoviesPreview(GetMoviesPreviewRequest) returns(MoviesPreview) {
         option (google.api.http) = {
             get: "/v1/movies/preview/search"
         };
     }
 
+    // Returns movies previews with the specified ids.
     rpc GetMoviesPreviewByIDs(GetMoviesPreviewByIDsRequest) returns(MoviesPreview) {
         option (google.api.http) = {
             get: "/v1/movies/preview"
         };
     }
 
+    // Returns all age ratings.
     rpc GetAgeRatings(google.protobuf.Empty) returns(AgeRatings){
         option (google.api.http) = {
             get: "/v1/age-ratings"
         };
     }
 
+    // Returns all genres.
     rpc GetGenres(google.protobuf.Empty) returns(Genres) {
         option (google.api.http) = {
             get: "/v1/genres"
         };
     }
-
+    
+    // Returns all countries.
     rpc GetCountries(google.protobuf.Empty) returns(Countries) {
         option (google.api.http) = {
             get: "/v1/countries"
