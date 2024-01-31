@@ -1,7 +1,3 @@
-CREATE ROLE movies_service WITH
-    LOGIN
-    ENCRYPTED PASSWORD 'SCRAM-SHA-256$4096:R9TMUdvkUG5yxu0rJlO+hA==$E/WRNMfl6SWK9xreXN8rfIkJjpQhWO8pd+8t2kx12D0=:sCS47DCNVIZYhoue/BReTE0ZhVRXzMGszsnnHexVwOU=';
-
 CREATE TABLE age_ratings (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL
@@ -20,6 +16,8 @@ CREATE TABLE movies (
     age_rating_id INT,
     release_year SMALLINT NOT NULL  CHECK (release_year > 1700 AND  release_year<=date_part('year', CURRENT_DATE))
 );
+ALTER TABLE movies ADD CONSTRAINT age_rating_fkey FOREIGN KEY (age_rating_id) REFERENCES age_ratings(id) ON DELETE SET NULL; 
+
 
 CREATE TABLE genres (
     id SERIAL PRIMARY KEY,
@@ -43,7 +41,6 @@ CREATE TABLE movies_countries (
     PRIMARY KEY(movie_id,country_id)
 );
 
-ALTER TABLE movies ADD CONSTRAINT age_rating_fkey FOREIGN KEY (age_rating_id) REFERENCES age_ratings(id) ON DELETE SET NULL; 
 
 GRANT SELECT ON movies TO movies_service;
 GRANT SELECT ON genres TO movies_service;

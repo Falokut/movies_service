@@ -24,8 +24,8 @@ services:
       MOVIES_CACHE_PASSWORD: ${REDIS_PASSWORD}
       MOVIES_PREVIEW_CACHE_PASSWORD: ${REDIS_PASSWORD}
     depends_on:
-      movies_db:
-        condition: service_healthy
+      movies_pool:
+        condition: service_started
       movies_service_cache:
         condition: service_healthy
     healthcheck:
@@ -43,7 +43,6 @@ services:
     labels:
       servicename: "movies_service"
       org.label-schema.group: "monitoring"
-
 
   movies_service_cache:
     hostname: redis

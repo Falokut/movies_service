@@ -23,11 +23,17 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MoviesServiceV1Client interface {
+	// Returns movie with the specified id.
 	GetMovie(ctx context.Context, in *GetMovieRequest, opts ...grpc.CallOption) (*Movie, error)
+	// Returns movies previews with the specified filter.
 	GetMoviesPreview(ctx context.Context, in *GetMoviesPreviewRequest, opts ...grpc.CallOption) (*MoviesPreview, error)
+	// Returns movies previews with the specified ids.
 	GetMoviesPreviewByIDs(ctx context.Context, in *GetMoviesPreviewByIDsRequest, opts ...grpc.CallOption) (*MoviesPreview, error)
+	// Returns all age ratings.
 	GetAgeRatings(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*AgeRatings, error)
+	// Returns all genres.
 	GetGenres(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Genres, error)
+	// Returns all countries.
 	GetCountries(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Countries, error)
 }
 
@@ -97,11 +103,17 @@ func (c *moviesServiceV1Client) GetCountries(ctx context.Context, in *emptypb.Em
 // All implementations must embed UnimplementedMoviesServiceV1Server
 // for forward compatibility
 type MoviesServiceV1Server interface {
+	// Returns movie with the specified id.
 	GetMovie(context.Context, *GetMovieRequest) (*Movie, error)
+	// Returns movies previews with the specified filter.
 	GetMoviesPreview(context.Context, *GetMoviesPreviewRequest) (*MoviesPreview, error)
+	// Returns movies previews with the specified ids.
 	GetMoviesPreviewByIDs(context.Context, *GetMoviesPreviewByIDsRequest) (*MoviesPreview, error)
+	// Returns all age ratings.
 	GetAgeRatings(context.Context, *emptypb.Empty) (*AgeRatings, error)
+	// Returns all genres.
 	GetGenres(context.Context, *emptypb.Empty) (*Genres, error)
+	// Returns all countries.
 	GetCountries(context.Context, *emptypb.Empty) (*Countries, error)
 	mustEmbedUnimplementedMoviesServiceV1Server()
 }

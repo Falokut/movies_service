@@ -78,7 +78,8 @@ type GetMoviesPreviewRequest struct {
 	CountriesIDs *string `protobuf:"bytes,3,opt,name=countriesIDs,json=country_ids,proto3,oneof" json:"countriesIDs,omitempty"`
 	Title        *string `protobuf:"bytes,4,opt,name=title,proto3,oneof" json:"title,omitempty"`
 	AgeRatings   *string `protobuf:"bytes,5,opt,name=ageRatings,json=age_ratings,proto3,oneof" json:"ageRatings,omitempty"`
-	// if limit = 0, will be used default limit = 10, if bigger than 100, will be used max limit = 100
+	// if limit = 0, will be used default limit = 10, if bigger than 100, will be
+	// used max limit = 100
 	Limit  uint32 `protobuf:"varint,6,opt,name=limit,proto3" json:"limit,omitempty"`
 	Offset uint32 `protobuf:"varint,7,opt,name=offset,proto3" json:"offset,omitempty"`
 }

@@ -26,6 +26,7 @@
   "paths": {
     "/v1/age-ratings": {
       "get": {
+        "summary": "Returns all age ratings.",
         "operationId": "moviesServiceV1_GetAgeRatings",
         "responses": {
           "200": {
@@ -60,6 +61,7 @@
     },
     "/v1/countries": {
       "get": {
+        "summary": "Returns all countries.",
         "operationId": "moviesServiceV1_GetCountries",
         "responses": {
           "200": {
@@ -94,6 +96,7 @@
     },
     "/v1/genres": {
       "get": {
+        "summary": "Returns all genres.",
         "operationId": "moviesServiceV1_GetGenres",
         "responses": {
           "200": {
@@ -126,8 +129,9 @@
         ]
       }
     },
-    "/v1/movie": {
+    "/v1/movie/{movie_id}": {
       "get": {
+        "summary": "Returns movie with the specified id.",
         "operationId": "moviesServiceV1_GetMovie",
         "responses": {
           "200": {
@@ -158,8 +162,8 @@
         "parameters": [
           {
             "name": "movie_id",
-            "in": "query",
-            "required": false,
+            "in": "path",
+            "required": true,
             "type": "integer",
             "format": "int32"
           }
@@ -171,6 +175,7 @@
     },
     "/v1/movies/preview": {
       "get": {
+        "summary": "Returns movies previews with the specified ids.",
         "operationId": "moviesServiceV1_GetMoviesPreviewByIDs",
         "responses": {
           "200": {
@@ -214,6 +219,7 @@
     },
     "/v1/movies/preview/search": {
       "get": {
+        "summary": "Returns movies previews with the specified filter.",
         "operationId": "moviesServiceV1_GetMoviesPreview",
         "responses": {
           "200": {
@@ -274,7 +280,7 @@
           },
           {
             "name": "limit",
-            "description": "if limit = 0, will be used default limit = 10, if bigger than 100, will be used max limit = 100",
+            "description": "if limit = 0, will be used default limit = 10, if bigger than 100, will be\nused max limit = 100",
             "in": "query",
             "required": false,
             "type": "integer",
