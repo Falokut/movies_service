@@ -351,19 +351,19 @@ func (m *RepositoryManager) GetMoviesPreviewByIDs(ctx context.Context, ids []str
 	m.logger.Info("Searching previews in cache")
 	cachedPreviews, notFoundedIds, err := m.moviesPreviewCache.GetMovies(ctx, ids)
 	if errors.Is(err, redis.Nil) {
-		m.metrics.IncCacheMiss("getMoviesPreview", int32(len(ids)))
+		m.metrics.IncCacheMiss("GetMoviesPreviewByIDs", int32(len(ids)))
 	} else if err != nil {
 		m.logger.Error(err)
 	}
 
 	if len(cachedPreviews) == len(ids) {
-		m.metrics.IncCacheHits("getMoviesPreview", int32(len(ids)))
+		m.metrics.IncCacheHits("GetMoviesPreviewByIDs", int32(len(ids)))
 		return cachedPreviews, nil
 	}
 
 	if len(cachedPreviews) != 0 && err == nil {
-		m.metrics.IncCacheHits("getMoviesPreview", int32(len(ids)-len(notFoundedIds)))
-		m.metrics.IncCacheMiss("getMoviesPreview", int32(len(notFoundedIds)))
+		m.metrics.IncCacheHits("GetMoviesPreviewByIDs", int32(len(ids)-len(notFoundedIds)))
+		m.metrics.IncCacheMiss("GetMoviesPreviewByIDs", int32(len(notFoundedIds)))
 		ids = notFoundedIds
 	}
 
