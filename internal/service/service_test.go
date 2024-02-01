@@ -131,9 +131,9 @@ func TestGetMovie(t *testing.T) {
 				ReleaseYear:         2000,
 			},
 			expectedResponce: &movies_service.Movie{
-				TitleRU:       "TitleRU",
-				PosterURL:     "someurl",
-				BackgroundURL: "someurl",
+				TitleRu:       "TitleRU",
+				PosterUrl:     "someurl",
+				BackgroundUrl: "someurl",
 				Description:   "Description",
 				Duration:      100,
 				ReleaseYear:   2000,
@@ -161,9 +161,9 @@ func TestGetMovie(t *testing.T) {
 				ReleaseYear:         2000,
 			},
 			expectedResponce: &movies_service.Movie{
-				TitleRU:       "TitleRU",
-				PosterURL:     "someurl",
-				BackgroundURL: "someurl",
+				TitleRu:       "TitleRU",
+				PosterUrl:     "someurl",
+				BackgroundUrl: "someurl",
 				Description:   "ShortDescription",
 				Genres:        []string{"genre1", "genre2"},
 				Duration:      100,
@@ -291,17 +291,17 @@ func TestGetMoviesPreview(t *testing.T) {
 			expectedResponce: &movies_service.MoviesPreview{
 				Movies: map[int32]*movies_service.MoviePreview{
 					10: {
-						TitleRU:          "TitleRU",
-						PreviewPosterURL: "",
+						TitleRu:          "TitleRU",
+						PreviewPosterUrl: "",
 						ShortDescription: "ShortDescription",
 						Duration:         100,
 						ReleaseYear:      2000,
 					},
 
 					12: {
-						TitleEN:          "TitleEn",
-						TitleRU:          "TitleRU",
-						PreviewPosterURL: "",
+						TitleEn:          "TitleEn",
+						TitleRu:          "TitleRU",
+						PreviewPosterUrl: "",
 						ShortDescription: "ShortDescription",
 						Duration:         150,
 						ReleaseYear:      2200,
@@ -385,15 +385,15 @@ func TestGetMoviesPreview(t *testing.T) {
 			expectedResponce: &movies_service.MoviesPreview{
 				Movies: map[int32]*movies_service.MoviePreview{
 					120: {
-						TitleRU:          "TitleRU",
+						TitleRu:          "TitleRU",
 						ShortDescription: "ShortDescription",
 						Duration:         100,
 						ReleaseYear:      2000,
 					},
 
 					12: {
-						TitleEN:          "TitleEn",
-						TitleRU:          "TitleRU",
+						TitleEn:          "TitleEn",
+						TitleRu:          "TitleRU",
 						ShortDescription: "ShortDescription",
 						Duration:         150,
 						ReleaseYear:      2200,
@@ -438,16 +438,16 @@ func TestGetMoviesPreview(t *testing.T) {
 			expectedResponce: &movies_service.MoviesPreview{
 				Movies: map[int32]*movies_service.MoviePreview{
 					10: {
-						TitleRU:          "TitleRU",
-						PreviewPosterURL: "",
+						TitleRu:          "TitleRU",
+						PreviewPosterUrl: "",
 						ShortDescription: "ShortDescription",
 						Duration:         100,
 						ReleaseYear:      2000,
 					},
 
 					12: {
-						TitleEN:          "TitleEn",
-						PreviewPosterURL: "TitleRU",
+						TitleEn:          "TitleEn",
+						PreviewPosterUrl: "TitleRU",
 						ShortDescription: "ShortDescription",
 						Duration:         150,
 						ReleaseYear:      2200,
@@ -592,12 +592,12 @@ func isProtoMoviesPreviewEqual(t *testing.T, expected, result *movies_service.Mo
 		return false
 	}
 	return assert.Equal(t, expected.ShortDescription, result.ShortDescription, "short descriptions not equals") &&
-		assert.Equal(t, expected.TitleRU, result.TitleRU, "ru titles not equals") &&
-		assert.Equal(t, expected.TitleEN, result.TitleEN, "en titles not equals") &&
+		assert.Equal(t, expected.TitleRu, result.TitleRu, "ru titles not equals") &&
+		assert.Equal(t, expected.TitleEn, result.TitleEn, "en titles not equals") &&
 		assert.Equal(t, expected.Genres, result.Genres, "genres ids not equals") &&
 		assert.Equal(t, expected.Duration, result.Duration, "duration not equals") &&
 		assert.Equal(t, expected.Countries, result.Countries, "countries ids not equals") &&
-		assert.Equal(t, expected.PreviewPosterURL, result.PreviewPosterURL, "preview posters urls not equals") &&
+		assert.Equal(t, expected.PreviewPosterUrl, result.PreviewPosterUrl, "preview posters urls not equals") &&
 		assert.Equal(t, expected.ReleaseYear, result.ReleaseYear, "release years not equals")
 }
 
@@ -609,12 +609,12 @@ func isProtoMoviesEqual(t *testing.T, expected, result *movies_service.Movie) bo
 		return false
 	}
 	return assert.Equal(t, expected.Description, result.Description, "descriptions not equals") &&
-		assert.Equal(t, expected.TitleRU, result.TitleRU, "ru titles not equals") &&
-		assert.Equal(t, expected.TitleEN, result.TitleEN, "en titles not equals") &&
+		assert.Equal(t, expected.TitleRu, result.TitleRu, "ru titles not equals") &&
+		assert.Equal(t, expected.TitleEn, result.TitleEn, "en titles not equals") &&
 		assert.Equal(t, expected.Genres, result.Genres, "genres ids not equals") &&
 		assert.Equal(t, expected.Duration, result.Duration, "duration not equals") &&
 		assert.Equal(t, expected.Countries, result.Countries, "countries ids not equals") &&
-		assert.Equal(t, expected.PosterURL, result.PosterURL, "posters urls not equals") &&
-		assert.Equal(t, expected.BackgroundURL, result.BackgroundURL, "backgrounds not equals") &&
+		assert.Equal(t, expected.PosterUrl, result.PosterUrl, "posters urls not equals") &&
+		assert.Equal(t, expected.BackgroundUrl, result.BackgroundUrl, "backgrounds not equals") &&
 		assert.Equal(t, expected.ReleaseYear, result.ReleaseYear, "release years not equals")
 }

@@ -32,6 +32,10 @@ var _ = runtime.String
 var _ = utilities.NewDoubleArray
 var _ = metadata.Join
 
+var (
+	filter_MoviesServiceV1_GetMovie_0 = &utilities.DoubleArray{Encoding: map[string]int{"movieID": 0, "movie_id": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+)
+
 func request_MoviesServiceV1_GetMovie_0(ctx context.Context, marshaler runtime.Marshaler, client MoviesServiceV1Client, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetMovieRequest
 	var metadata runtime.ServerMetadata
@@ -51,6 +55,13 @@ func request_MoviesServiceV1_GetMovie_0(ctx context.Context, marshaler runtime.M
 	protoReq.MovieID, err = runtime.Int32(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "movieID", err)
+	}
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_MoviesServiceV1_GetMovie_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := client.GetMovie(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -77,6 +88,13 @@ func local_request_MoviesServiceV1_GetMovie_0(ctx context.Context, marshaler run
 	protoReq.MovieID, err = runtime.Int32(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "movieID", err)
+	}
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_MoviesServiceV1_GetMovie_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := server.GetMovie(ctx, &protoReq)

@@ -2,8 +2,12 @@ syntax = "proto3";
 
 package movies_service;
 option go_package = "movies_service/v1/protos";
+import "google/protobuf/field_mask.proto";
 
-message GetMovieRequest { int32 movieID = 1 [ json_name = "movie_id" ]; }
+message GetMovieRequest {
+  int32 movieID = 1 [ json_name = "movie_id" ];
+  // Fields to return, valid array values is Movie fields names, leave it empty if you want get all fields
+  google.protobuf.FieldMask mask = 2;}
 
 // for multiple values use ',' separator
 message GetMoviesPreviewRequest {
@@ -16,19 +20,21 @@ message GetMoviesPreviewRequest {
   // used max limit = 100
   uint32 limit = 6;
   uint32 offset = 7;
+  // Fields to return, valid array values is MoviePreview fields names, leave it empty if you want get all fields
+  google.protobuf.FieldMask mask = 8;
 }
 
 message MoviePreview {
-  string shortDescription = 1 [ json_name = "short_description" ];
-  string titleRU = 2 [ json_name = "title_ru" ];
-  string titleEN = 3 [ json_name = "title_en" ];
+  string short_description = 1;
+  string title_ru = 2;
+  string title_en = 3;
   // movie duration in minutes
   int32 duration = 4;
-  string previewPosterURL = 5 [ json_name = "preview_poster_url" ];
+  string preview_poster_url = 5;
   repeated string countries = 6;
   repeated string genres = 7;
-  int32 releaseYear = 8 [ json_name = "release_year" ];
-  string ageRating = 9 [ json_name = "age_rating" ];
+  int32 release_year = 8;
+  string age_rating = 9;
 }
 
 message MoviesPreview { map<int32, MoviePreview> movies = 1; }
@@ -51,21 +57,23 @@ message Genres { repeated Genre genres = 1; }
 
 message Movie {
   string description = 1;
-  string titleRU = 2 [ json_name = "title_ru" ];
-  string titleEN = 3 [ json_name = "title_en" ];
-  repeated string genres = 4 [ json_name = "genres_names" ];
+  string title_ru = 2;
+  string title_en = 3;
+  repeated string genres = 4;
   // movie duration in minutes
   int32 duration = 5;
-  repeated string countries = 6 [ json_name = "countres_names" ];
-  string posterURL = 7 [ json_name = "poster_url" ];
-  string backgroundURL = 8 [ json_name = "background_url" ];
-  int32 releaseYear = 9 [ json_name = "release_year" ];
-  string ageRating = 10 [ json_name = "age_rating" ];
+  repeated string countries = 6;
+  string poster_url = 7 ;
+  string background_url = 8;
+  int32 release_year = 9;
+  string age_rating = 10;
 };
 
 message GetMoviesPreviewByIDsRequest {
   // for multiple values use ',' separator
   string moviesIDs = 1 [ json_name = "movies_ids" ];
+    // Fields to return, valid array values is MoviePreview fields names, leave it empty if you want get all fields
+  google.protobuf.FieldMask mask = 2;
 }
 
 message UserErrorMessage { string message = 1 [ json_name = "message" ]; }

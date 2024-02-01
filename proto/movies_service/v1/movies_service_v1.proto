@@ -45,6 +45,17 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
 			}
 		}
 	}
+    responses: {
+		key: "400";
+		value: {
+			description: "Invalid input data, see error message.";
+			schema: {
+				json_schema: {
+					ref: "#/definitions/rpcStatus";
+				}
+			}
+		}
+	}
 };
 
 service moviesServiceV1 {

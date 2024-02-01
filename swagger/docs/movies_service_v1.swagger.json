@@ -35,6 +35,12 @@
               "$ref": "#/definitions/movies_serviceAgeRatings"
             }
           },
+          "400": {
+            "description": "Invalid input data, see error message.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          },
           "404": {
             "description": "Returned when the resource does not exist.",
             "schema": {
@@ -68,6 +74,12 @@
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/movies_serviceCountries"
+            }
+          },
+          "400": {
+            "description": "Invalid input data, see error message.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
             }
           },
           "404": {
@@ -105,6 +117,12 @@
               "$ref": "#/definitions/movies_serviceGenres"
             }
           },
+          "400": {
+            "description": "Invalid input data, see error message.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          },
           "404": {
             "description": "Returned when the resource does not exist.",
             "schema": {
@@ -140,6 +158,12 @@
               "$ref": "#/definitions/movies_serviceMovie"
             }
           },
+          "400": {
+            "description": "Invalid input data, see error message.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          },
           "404": {
             "description": "Returned when the resource does not exist.",
             "schema": {
@@ -166,6 +190,13 @@
             "required": true,
             "type": "integer",
             "format": "int32"
+          },
+          {
+            "name": "mask",
+            "description": "Fields to return, valid array values is Movie fields names, leave it empty if you want get all fields",
+            "in": "query",
+            "required": false,
+            "type": "string"
           }
         ],
         "tags": [
@@ -182,6 +213,12 @@
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/movies_serviceMoviesPreview"
+            }
+          },
+          "400": {
+            "description": "Invalid input data, see error message.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
             }
           },
           "404": {
@@ -210,6 +247,13 @@
             "in": "query",
             "required": false,
             "type": "string"
+          },
+          {
+            "name": "mask",
+            "description": "Fields to return, valid array values is MoviePreview fields names, leave it empty if you want get all fields",
+            "in": "query",
+            "required": false,
+            "type": "string"
           }
         ],
         "tags": [
@@ -226,6 +270,12 @@
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/movies_serviceMoviesPreview"
+            }
+          },
+          "400": {
+            "description": "Invalid input data, see error message.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
             }
           },
           "404": {
@@ -292,6 +342,13 @@
             "required": false,
             "type": "integer",
             "format": "int64"
+          },
+          {
+            "name": "mask",
+            "description": "Fields to return, valid array values is MoviePreview fields names, leave it empty if you want get all fields",
+            "in": "query",
+            "required": false,
+            "type": "string"
           }
         ],
         "tags": [
@@ -366,13 +423,13 @@
         "description": {
           "type": "string"
         },
-        "title_ru": {
+        "titleRu": {
           "type": "string"
         },
-        "title_en": {
+        "titleEn": {
           "type": "string"
         },
-        "genres_names": {
+        "genres": {
           "type": "array",
           "items": {
             "type": "string"
@@ -383,23 +440,23 @@
           "format": "int32",
           "title": "movie duration in minutes"
         },
-        "countres_names": {
+        "countries": {
           "type": "array",
           "items": {
             "type": "string"
           }
         },
-        "poster_url": {
+        "posterUrl": {
           "type": "string"
         },
-        "background_url": {
+        "backgroundUrl": {
           "type": "string"
         },
-        "release_year": {
+        "releaseYear": {
           "type": "integer",
           "format": "int32"
         },
-        "age_rating": {
+        "ageRating": {
           "type": "string"
         }
       }
@@ -407,13 +464,13 @@
     "movies_serviceMoviePreview": {
       "type": "object",
       "properties": {
-        "short_description": {
+        "shortDescription": {
           "type": "string"
         },
-        "title_ru": {
+        "titleRu": {
           "type": "string"
         },
-        "title_en": {
+        "titleEn": {
           "type": "string"
         },
         "duration": {
@@ -421,7 +478,7 @@
           "format": "int32",
           "title": "movie duration in minutes"
         },
-        "preview_poster_url": {
+        "previewPosterUrl": {
           "type": "string"
         },
         "countries": {
@@ -436,11 +493,11 @@
             "type": "string"
           }
         },
-        "release_year": {
+        "releaseYear": {
           "type": "integer",
           "format": "int32"
         },
-        "age_rating": {
+        "ageRating": {
           "type": "string"
         }
       }

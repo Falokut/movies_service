@@ -423,7 +423,6 @@ func (m *RepositoryManager) GetMoviesPreviewByIDs(ctx context.Context, ids []str
 	for _, movie := range movies {
 		movie.Countries = countries[movie.ID]
 		movie.Genres = genres[movie.ID]
-		m.logger.Debugf("countries, genres: %v %v", countries, genres)
 		moviesFromRepo = append(moviesFromRepo, movie)
 	}
 
