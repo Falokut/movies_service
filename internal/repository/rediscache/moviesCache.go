@@ -1,21 +1,21 @@
-package repository
+package rediscache
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
-	"github.com/opentracing/opentracing-go"
+	"github.com/Falokut/movies_service/internal/models"
 	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 )
 
 type moviesCache struct {
-	rdb    *redis.Client
-	logger *logrus.Logger
+	rdb     *redis.Client
+	logger  *logrus.Logger
+	metrics Metrics
 }
 
 func (c *moviesCache) PingContext(ctx context.Context) error {
@@ -30,7 +30,7 @@ func (c *moviesCache) Shutdown() {
 	c.rdb.Close()
 }
 
-func NewMoviesCache(logger *logrus.Logger, opt *redis.Options) (*moviesCache, error) {
+func NewMoviesCache(logger *logrus.Logger, opt *redis.Options, metrics Metrics) (*moviesCache, error) {
 	logger.Info("Creating movies cache client")
 	rdb := redis.NewClient(opt)
 	if rdb == nil {
@@ -43,23 +43,26 @@ func NewMoviesCache(logger *logrus.Logger, opt *redis.Options) (*moviesCache, er
 		return nil, fmt.Errorf("connection is not established: %s", err.Error())
 	}
 
-	return &moviesCache{rdb: rdb, logger: logger}, nil
+	return &moviesCache{rdb: rdb, logger: logger, metrics: metrics}, nil
 }
 
-func (c *moviesCache) GetMovie(ctx context.Context, movieId int32) (Movie, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "moviesCache.GetMovie")
-	defer span.Finish()
+func (c *moviesCache) GetMovie(ctx context.Context, movieId int32) (movie models.RepositoryMovie, err error) {
+	defer c.updateMetrics(err, "GetMovie")
+	defer handleError(ctx, &err)
+	defer c.logError(err, "GetMovie")
+
 	res, err := c.rdb.Get(ctx, fmt.Sprint(movieId)).Bytes()
 	if err != nil {
-		return Movie{}, err
+		return
 	}
 
-	var movie cachedMovie
-	if err := json.Unmarshal(res, &movie); err != nil {
-		return Movie{}, err
+	var cached cachedMovie
+	if err = json.Unmarshal(res, &cached); err != nil {
+		return
 	}
+
 	movie.ID = movieId
-	return convertCacheMovieToMovie(movie), nil
+	return convertCacheMovieToMovie(cached), nil
 }
 
 type cacheMovieFilterKey struct {
@@ -71,7 +74,7 @@ type cacheMovieFilterKey struct {
 	Offset       uint32 `json:"7,omitempty"`
 }
 
-func buildFilterKey(filter MoviesFilter, limit, offset uint32) string {
+func buildFilterKey(filter models.MoviesFilter, limit, offset uint32) string {
 	key := cacheMovieFilterKey{
 		MoviesIDs:    filter.MoviesIDs,
 		GenresIDs:    filter.GenresIDs,
@@ -85,62 +88,23 @@ func buildFilterKey(filter MoviesFilter, limit, offset uint32) string {
 	return string(keyBytes)
 }
 
-type cachedFilteredRequest struct {
-	Ids []string `json:"-,"`
-}
-
-func (c *moviesCache) GetMovies(ctx context.Context, filter MoviesFilter, limit, offset uint32) ([]string, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "moviesCache.GetMovies")
-	defer span.Finish()
-
-	key := buildFilterKey(filter, limit, offset)
-	res, err := c.rdb.Get(ctx, key).Bytes()
-	if err != nil {
-		return []string{}, err
-	}
-
-	var cache cachedFilteredRequest
-	if err = json.Unmarshal(res, &cache); err != nil {
-		return []string{}, err
-	}
-
-	return cache.Ids, nil
-}
-
-func (c *moviesCache) CacheMovies(ctx context.Context, movies []Movie, ttl time.Duration) error {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "moviesCache.CacheMovies")
-	defer span.Finish()
+func (c *moviesCache) CacheMovies(ctx context.Context, movies []models.RepositoryMovie, ttl time.Duration) (err error) {
+	defer handleError(ctx, &err)
+	defer c.logError(err, "CacheMovies")
 
 	tx := c.rdb.Pipeline()
 	for _, movie := range movies {
 		movieToCache := convertMovieToCacheMovie(movie)
-		toCache, err := json.Marshal(movieToCache)
-		if err != nil {
-			return err
+		toCache, merr := json.Marshal(movieToCache)
+		if merr != nil {
+			err = merr
+			return
 		}
+
 		tx.Set(ctx, fmt.Sprint(movie.ID), toCache, ttl)
 	}
-	_, err := tx.Exec(ctx)
-	return err
-}
-
-func (c *moviesCache) CacheFilteredRequest(ctx context.Context, filter MoviesFilter,
-	limit, offset uint32, moviesIDs []string, ttl time.Duration) error {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "moviesCache.CacheFilteredRequest")
-	defer span.Finish()
-
-	key := buildFilterKey(filter, limit, offset)
-
-	var toCache = cachedFilteredRequest{
-		Ids: moviesIDs,
-	}
-
-	marshalled, err := json.Marshal(&toCache)
-	if err != nil {
-		return err
-	}
-
-	return c.rdb.Set(ctx, key, marshalled, ttl).Err()
+	_, err = tx.Exec(ctx)
+	return
 }
 
 type cachedMovie struct {
@@ -157,40 +121,68 @@ type cachedMovie struct {
 	AgeRating           string   `json:"age_rating"`
 }
 
-func convertMovieToCacheMovie(movie Movie) cachedMovie {
+func convertMovieToCacheMovie(movie models.RepositoryMovie) cachedMovie {
 	return cachedMovie{
 		ID:                  movie.ID,
 		TitleRU:             movie.TitleRU,
-		TitleEN:             movie.TitleEN.String,
+		TitleEN:             movie.TitleEN,
 		Description:         movie.Description,
 		Genres:              movie.Genres,
 		Duration:            movie.Duration,
-		PosterID:            movie.PosterID.String,
-		BackgroundPictureID: movie.BackgroundPictureID.String,
+		PosterID:            movie.PosterID,
+		BackgroundPictureID: movie.BackgroundPictureID,
 		Countries:           movie.Countries,
 		ReleaseYear:         movie.ReleaseYear,
 		AgeRating:           movie.AgeRating,
 	}
 }
 
-func convertToNullString(s string) sql.NullString {
-	if s == "" {
-		return sql.NullString{}
-	}
-	return sql.NullString{String: s, Valid: true}
-}
-func convertCacheMovieToMovie(movie cachedMovie) Movie {
-	return Movie{
+func convertCacheMovieToMovie(movie cachedMovie) models.RepositoryMovie {
+	return models.RepositoryMovie{
 		ID:                  movie.ID,
 		TitleRU:             movie.TitleRU,
-		TitleEN:             convertToNullString(movie.TitleEN),
+		TitleEN:             movie.TitleEN,
 		Description:         movie.Description,
 		Genres:              movie.Genres,
 		Duration:            movie.Duration,
-		PosterID:            convertToNullString(movie.PosterID),
-		BackgroundPictureID: convertToNullString(movie.BackgroundPictureID),
+		PosterID:            movie.PosterID,
+		BackgroundPictureID: movie.BackgroundPictureID,
 		Countries:           movie.Countries,
 		ReleaseYear:         movie.ReleaseYear,
 		AgeRating:           movie.AgeRating,
+	}
+}
+
+func (c *moviesCache) logError(err error, functionName string) {
+	if err == nil {
+		return
+	}
+
+	var repoErr = &models.ServiceError{}
+	if errors.As(err, &repoErr) {
+		c.logger.WithFields(
+			logrus.Fields{
+				"error.function.name": functionName,
+				"error.msg":           repoErr.Msg,
+				"error.code":          repoErr.Code,
+			},
+		).Error("movies cache error occurred")
+	} else {
+		c.logger.WithFields(
+			logrus.Fields{
+				"error.function.name": functionName,
+				"error.msg":           err.Error(),
+			},
+		).Error("movies cache error occurred")
+	}
+}
+
+func (c *moviesCache) updateMetrics(err error, functionName string) {
+	if err == nil {
+		c.metrics.IncCacheHits(functionName, 1)
+		return
+	}
+	if models.Code(err) == models.NotFound {
+		c.metrics.IncCacheMiss(functionName, 1)
 	}
 }

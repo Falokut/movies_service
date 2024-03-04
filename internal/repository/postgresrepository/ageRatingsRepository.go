@@ -1,4 +1,4 @@
-package repository
+package postgresrepository
 
 import (
 	"context"
@@ -21,9 +21,7 @@ const (
 func NewAgeRatingsRepository(db *sqlx.DB, logger *logrus.Logger) *ageRatingsRepository {
 	return &ageRatingsRepository{db: db, logger: logger}
 }
-func (r *ageRatingsRepository) Shutdown() {
-	r.db.Close()
-}
+
 
 func (r *ageRatingsRepository) GetAgeRatings(ctx context.Context) ([]string, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "ageRatingsRepository.GetAgeRatings")

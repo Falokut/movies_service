@@ -2,23 +2,31 @@ package service
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"strconv"
-	"strings"
 
-	"github.com/Falokut/movies_service/internal/repository"
-	movies_service "github.com/Falokut/movies_service/pkg/movies_service/v1/protos"
-	"github.com/mennanov/fmutils"
-	"github.com/opentracing/opentracing-go"
+	"github.com/Falokut/movies_service/internal/models"
 	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-//go:generate mockgen -source=service.go -destination=mocks/service.go
-type ImagesService interface {
-	GetPictureURL(pictureID, baseUrl, category string) string
+//go:generate mockgen -source=service.go -destination=mocks/repository.go
+type MoviesRepository interface {
+	GetMovie(ctx context.Context, movieId int32) (models.RepositoryMovie, error)
+	GetMoviePreview(ctx context.Context, movieId int32) (models.RepositoryMoviePreview, error)
+	GetMoviesPreview(ctx context.Context, Filter models.MoviesFilter, limit, offset uint32) ([]models.RepositoryMoviePreview, error)
+	GetMoviesPreviewByIDs(ctx context.Context, ids []string) ([]models.RepositoryMoviePreview, error)
+	GetAgeRatings(ctx context.Context) ([]string, error)
+	GetGenres(ctx context.Context, movieId int32) ([]string, error)
+	GetAllGenres(ctx context.Context) ([]models.Genre, error)
+	GetCountries(ctx context.Context, movieId int32) ([]string, error)
+	GetAllCountries(ctx context.Context) ([]models.Country, error)
+}
+
+type MoviesService interface {
+	GetMovie(ctx context.Context, id int32) (models.Movie, error)
+	GetMoviesPreview(ctx context.Context, filter models.MoviesFilter, limit, offset uint32) ([]models.MoviePreview, error)
+	GetMoviesPreviewByIDs(ctx context.Context, ids []string) ([]models.MoviePreview, error)
+	GetAgeRatings(ctx context.Context) ([]string, error)
+	GetGenres(ctx context.Context) ([]models.Genre, error)
+	GetCountries(ctx context.Context) ([]models.Country, error)
 }
 
 type PicturesUrlConfig struct {
@@ -27,242 +35,116 @@ type PicturesUrlConfig struct {
 	PreviewPostersCategory string `yaml:"preview_posters_category" env:"PREVIEW_POSTERS_CATEGORY"`
 	BackgroundsCategory    string `yaml:"backgrounds_category" env:"BACKGROUNDS_CATEGORY"`
 }
-type MoviesService struct {
-	movies_service.UnimplementedMoviesServiceV1Server
-	logger        *logrus.Logger
-	repoManager   repository.MoviesRepositoryManager
-	errorHandler  errorHandler
-	imagesService ImagesService
-	picturesCfg   PicturesUrlConfig
+
+type moviesService struct {
+	logger      *logrus.Logger
+	repo        MoviesRepository
+	picturesCfg PicturesUrlConfig
 }
 
-func NewMoviesService(logger *logrus.Logger, repoManager repository.MoviesRepositoryManager,
-	imagesService ImagesService, picturesCfg PicturesUrlConfig) *MoviesService {
-	errorHandler := newErrorHandler(logger)
-	return &MoviesService{
-		logger:        logger,
-		repoManager:   repoManager,
-		errorHandler:  errorHandler,
-		imagesService: imagesService,
-		picturesCfg:   picturesCfg,
+func NewMoviesService(logger *logrus.Logger, repo MoviesRepository,
+	picturesCfg PicturesUrlConfig) *moviesService {
+	return &moviesService{
+		logger:      logger,
+		repo:        repo,
+		picturesCfg: picturesCfg,
 	}
 }
 
-func (s *MoviesService) GetMovie(ctx context.Context, in *movies_service.GetMovieRequest) (*movies_service.Movie, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "MoviesService.GetMovie")
-	defer span.Finish()
-
-	if in.Mask != nil && !in.Mask.IsValid(&movies_service.Movie{}) {
-		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrInvalidArgument, "invalid mask value")
-	}
-
-	movie, err := s.repoManager.GetMovie(ctx, in.MovieID)
-	if errors.Is(err, repository.ErrNotFound) {
-		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrNotFound, "")
-	}
+func (s *moviesService) GetMovie(ctx context.Context, id int32) (movie models.Movie, err error) {
+	res, err := s.repo.GetMovie(ctx, id)
 	if err != nil {
-		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrInternal, err.Error())
+		return
 	}
-
-	span.SetTag("grpc.status", codes.OK)
-	if in.Mask == nil || len(in.Mask.Paths) == 0 {
-		return s.convertDbMovieToProto(movie), nil
-	}
-
-	res := s.convertDbMovieToProto(movie)
-	fmutils.Filter(res, in.Mask.Paths)
-	return res, nil
-}
-
-func (s *MoviesService) GetAgeRatings(ctx context.Context, in *emptypb.Empty) (*movies_service.AgeRatings, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "MoviesService.GetAgeRatings")
-	defer span.Finish()
-
-	ratings, err := s.repoManager.GetAgeRatings(ctx)
-	if err != nil {
-		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrInternal, err.Error())
-	}
-
-	span.SetTag("grpc.status", codes.OK)
-	return &movies_service.AgeRatings{Ratings: ratings}, nil
-}
-
-func (s *MoviesService) GetMoviesPreview(ctx context.Context, in *movies_service.GetMoviesPreviewRequest) (*movies_service.MoviesPreview, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "MoviesService.GetMoviesPreview")
-	defer span.Finish()
-
-	if in.Mask != nil && !in.Mask.IsValid(&movies_service.MoviePreview{}) {
-		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrInvalidArgument, "invalid mask value")
-	}
-
-	err := validateFilter(in)
-	if errors.Is(err, ErrInvalidFilter) {
-		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrInvalidArgument, err.Error())
-	}
-
-	filter := repository.MoviesFilter{
-		MoviesIDs:    ReplaceAllDoubleQuotes(in.GetMoviesIDs()),
-		GenresIDs:    ReplaceAllDoubleQuotes(in.GetGenresIDs()),
-		CountriesIDs: ReplaceAllDoubleQuotes(in.GetCountriesIDs()),
-		AgeRating:    GetAgeRatingsFilter(in.GetAgeRatings()),
-		Title:        ReplaceAllDoubleQuotes(in.GetTitle()),
-	}
-	s.logger.Print(filter.AgeRating)
-	if in.Limit == 0 {
-		in.Limit = 10
-	} else if in.Limit > 100 {
-		in.Limit = 100
-	}
-
-	Movies, err := s.repoManager.GetMoviesPreview(ctx, filter, in.Limit, in.Offset)
-	if errors.Is(err, repository.ErrNotFound) {
-		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrNotFound, "")
-	}
-	if err != nil {
-		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrInternal, err.Error())
-	}
-	if len(Movies) == 0 {
-		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrNotFound, "")
-	}
-
-	movies := make(map[int32]*movies_service.MoviePreview, len(Movies))
-	isMaskNil := in.Mask == nil || len(in.Mask.Paths) == 0
-	for _, movie := range Movies {
-		if isMaskNil {
-			movies[movie.ID] = s.convertDbMoviePreviewToProto(movie)
-		} else {
-			filteredMovie := s.convertDbMoviePreviewToProto(movie)
-			fmutils.Filter(filteredMovie, in.Mask.Paths)
-			movies[movie.ID] = filteredMovie
-		}
-	}
-
-	span.SetTag("grpc.status", codes.OK)
-	return &movies_service.MoviesPreview{Movies: movies}, nil
-}
-
-func (s *MoviesService) GetMoviesPreviewByIDs(ctx context.Context,
-	in *movies_service.GetMoviesPreviewByIDsRequest) (*movies_service.MoviesPreview, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "MoviesService.GetMoviesPreviewByIDs")
-	defer span.Finish()
-
-	if in.Mask != nil && !in.Mask.IsValid(&movies_service.MoviePreview{}) {
-		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrInvalidArgument, "invalid mask value")
-	}
-	if in.MoviesIDs == "" {
-		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrInvalidArgument, "movies_ids mustn't be empty")
-	}
-	err := checkFilterParam(in.MoviesIDs)
-	if errors.Is(err, ErrInvalidFilter) {
-		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrInvalidArgument, err.Error())
-	}
-
-	Movies, err := s.repoManager.GetMoviesPreviewByIDs(ctx,
-		strings.Split(ReplaceAllDoubleQuotes(in.MoviesIDs), ","))
-	if errors.Is(err, repository.ErrNotFound) {
-		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrNotFound, "")
-	}
-	if err != nil {
-		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrInternal, err.Error())
-	}
-	if len(Movies) == 0 {
-		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrNotFound, "")
-	}
-
-	movies := make(map[int32]*movies_service.MoviePreview, len(Movies))
-	isMaskNil := in.Mask == nil || len(in.Mask.Paths) == 0
-	for _, movie := range Movies {
-		if isMaskNil {
-			movies[movie.ID] = s.convertDbMoviePreviewToProto(movie)
-		} else {
-			filteredMovie := s.convertDbMoviePreviewToProto(movie)
-			fmutils.Filter(filteredMovie, in.Mask.Paths)
-			movies[movie.ID] = filteredMovie
-		}
-	}
-
-	span.SetTag("grpc.status", codes.OK)
-	return &movies_service.MoviesPreview{Movies: movies}, nil
-}
-
-func (s *MoviesService) GetGenres(ctx context.Context, in *emptypb.Empty) (*movies_service.Genres, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "MoviesService.GetGenres")
-	defer span.Finish()
-
-	genres, err := s.repoManager.GetAllGenres(ctx)
-	if err != nil {
-		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrInternal, err.Error())
-	}
-
-	proto := make([]*movies_service.Genre, 0, len(genres))
-	for _, genre := range genres {
-		proto = append(proto, &movies_service.Genre{Id: genre.ID, Name: genre.Name})
-	}
-	return &movies_service.Genres{Genres: proto}, nil
-}
-
-func (s *MoviesService) GetCountries(ctx context.Context, in *emptypb.Empty) (*movies_service.Countries, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "MoviesService.GetCountries")
-	defer span.Finish()
-
-	countries, err := s.repoManager.GetAllCountries(ctx)
-	if err != nil {
-		return nil, s.errorHandler.createErrorResponceWithSpan(span, ErrInternal, err.Error())
-	}
-
-	proto := make([]*movies_service.Country, 0, len(countries))
-	for _, country := range countries {
-		proto = append(proto, &movies_service.Country{Id: country.ID, Name: country.Name})
-	}
-
-	span.SetTag("grpc.status", codes.OK)
-	return &movies_service.Countries{Countries: proto}, nil
-}
-
-func GetAgeRatingsFilter(ageRating string) string {
-	ageRating = ReplaceAllDoubleQuotes(strings.ReplaceAll(ageRating, " ", ""))
-	str := strings.Split(ageRating, ",")
-	for i := 0; i < len(str); i++ {
-		if num, err := strconv.Atoi(str[i]); err == nil {
-			str[i] = fmt.Sprintf("%d+", num)
-		}
-	}
-	return strings.Join(str, ",")
-}
-
-func (s *MoviesService) convertDbMoviePreviewToProto(movie repository.MoviePreview) *movies_service.MoviePreview {
-	posterURL := s.imagesService.GetPictureURL(movie.PreviewPosterID.String,
-		s.picturesCfg.BaseUrl, s.picturesCfg.PreviewPostersCategory)
-	return &movies_service.MoviePreview{
-		TitleRu:          movie.TitleRU,
-		TitleEn:          movie.TitleEN.String,
-		Genres:           movie.Genres,
-		Countries:        movie.Countries,
-		Duration:         movie.Duration,
-		PreviewPosterUrl: posterURL,
-		ShortDescription: movie.ShortDescription,
-		ReleaseYear:      movie.ReleaseYear,
-		AgeRating:        movie.AgeRating,
-	}
-}
-
-func (s *MoviesService) convertDbMovieToProto(movie repository.Movie) *movies_service.Movie {
-	return &movies_service.Movie{
-		Description: movie.Description,
-		TitleRu:     movie.TitleRU,
-		TitleEn:     movie.TitleEN.String,
-		Genres:      movie.Genres,
-		Duration:    movie.Duration,
-		Countries:   movie.Countries,
-		PosterUrl: s.imagesService.GetPictureURL(movie.PosterID.String,
+	return models.Movie{
+		Description: res.Description,
+		TitleRU:     res.TitleRU,
+		TitleEN:     res.TitleEN,
+		Genres:      res.Genres,
+		Duration:    res.Duration,
+		Countries:   res.Countries,
+		PosterUrl: getPictureURL(res.PosterID,
 			s.picturesCfg.BaseUrl, s.picturesCfg.PostersCategory),
-		BackgroundUrl: s.imagesService.GetPictureURL(movie.BackgroundPictureID.String,
+		BackgroundUrl: getPictureURL(res.BackgroundPictureID,
 			s.picturesCfg.BaseUrl, s.picturesCfg.BackgroundsCategory),
-		ReleaseYear: movie.ReleaseYear,
-		AgeRating:   movie.AgeRating,
-	}
+		ReleaseYear: res.ReleaseYear,
+		AgeRating:   res.AgeRating,
+	}, nil
 }
 
-func ReplaceAllDoubleQuotes(str string) string {
-	return strings.ReplaceAll(str, `"`, "")
+func (s *moviesService) GetAgeRatings(ctx context.Context) (ratings []string, err error) {
+	ratings, err = s.repo.GetAgeRatings(ctx)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (s *moviesService) GetMoviesPreview(ctx context.Context,
+	filter models.MoviesFilter, limit, offset uint32) (movies []models.MoviePreview, err error) {
+
+	res, err := s.repo.GetMoviesPreview(ctx, filter, limit, offset)
+	if err != nil {
+		return
+	}
+	movies = make([]models.MoviePreview, len(res))
+	for i := range res {
+		movies[i] = models.MoviePreview{
+			ID:        res[i].ID,
+			TitleRU:   res[i].TitleRU,
+			TitleEN:   res[i].TitleEN,
+			Genres:    res[i].Genres,
+			Countries: res[i].Countries,
+			Duration:  res[i].Duration,
+			PreviewPosterUrl: getPictureURL(res[i].PreviewPosterID,
+				s.picturesCfg.BaseUrl, s.picturesCfg.PreviewPostersCategory),
+			ShortDescription: res[i].ShortDescription,
+			ReleaseYear:      res[i].ReleaseYear,
+			AgeRating:        res[i].AgeRating,
+		}
+	}
+	return
+}
+
+func (s *moviesService) GetMoviesPreviewByIDs(ctx context.Context,
+	ids []string) (movies []models.MoviePreview, err error) {
+
+	res, err := s.repo.GetMoviesPreviewByIDs(ctx, ids)
+	if err != nil {
+		return
+	}
+	movies = make([]models.MoviePreview, len(res))
+	for i := range res {
+		movies[i] = models.MoviePreview{
+			ID:        res[i].ID,
+			TitleRU:   res[i].TitleRU,
+			TitleEN:   res[i].TitleEN,
+			Genres:    res[i].Genres,
+			Countries: res[i].Countries,
+			Duration:  res[i].Duration,
+			PreviewPosterUrl: getPictureURL(res[i].PreviewPosterID,
+				s.picturesCfg.BaseUrl, s.picturesCfg.PreviewPostersCategory),
+			ShortDescription: res[i].ShortDescription,
+			ReleaseYear:      res[i].ReleaseYear,
+			AgeRating:        res[i].AgeRating,
+		}
+	}
+	return
+}
+
+func (s *moviesService) GetGenres(ctx context.Context) ([]models.Genre, error) {
+	return s.repo.GetAllGenres(ctx)
+}
+
+func (s *moviesService) GetCountries(ctx context.Context) (countries []models.Country, err error) {
+	return s.repo.GetAllCountries(ctx)
+}
+
+func getPictureURL(pictureID, baseUrl, category string) string {
+	if pictureID == "" || baseUrl == "" || category == "" {
+		return ""
+	}
+
+	return baseUrl + "/" + category + "/" + pictureID
 }

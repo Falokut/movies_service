@@ -10,7 +10,7 @@ import "google/protobuf/empty.proto";
 
 option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
     schemes: HTTP;
-    //schemes: HTTPS;
+    schemes: HTTPS;
     consumes: "application/json";
     produces: "application/json";
 
@@ -29,7 +29,7 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
 			description: "Returned when the resource does not exist.";
 			schema: {
 				json_schema: {
-					ref: "#/definitions/rpcStatus";
+					ref: "#/definitions/googlerpcStatus";
 				}
 			}
 		}
@@ -40,7 +40,7 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
 			description: "Something went wrong.";
 			schema: {
 				json_schema: {
-					ref: "#/definitions/rpcStatus";
+					ref: "#/definitions/googlerpcStatus";
 				}
 			}
 		}
@@ -51,7 +51,7 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
 			description: "Invalid input data, see error message.";
 			schema: {
 				json_schema: {
-					ref: "#/definitions/rpcStatus";
+					ref: "#/definitions/googlerpcStatus";
 				}
 			}
 		}

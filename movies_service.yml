@@ -10,7 +10,8 @@ networks:
 
 services:
   movies_service:
-    build: ./
+    build:
+      dockerfile: alpine.Dockerfile
     command: ./bin/app
     volumes:
       - ./docker/containers-configs/:/configs

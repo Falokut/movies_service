@@ -10,12 +10,15 @@ import (
 	server "github.com/Falokut/grpc_rest_server"
 	"github.com/Falokut/healthcheck"
 	"github.com/Falokut/movies_service/internal/config"
+	"github.com/Falokut/movies_service/internal/handler"
 	"github.com/Falokut/movies_service/internal/repository"
+	"github.com/Falokut/movies_service/internal/repository/postgresrepository"
+	"github.com/Falokut/movies_service/internal/repository/rediscache"
 	"github.com/Falokut/movies_service/internal/service"
 	jaegerTracer "github.com/Falokut/movies_service/pkg/jaeger"
+	"github.com/Falokut/movies_service/pkg/logging"
 	"github.com/Falokut/movies_service/pkg/metrics"
 	movies_service "github.com/Falokut/movies_service/pkg/movies_service/v1/protos"
-	logging "github.com/Falokut/online_cinema_ticket_office.loggerwrapper"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/opentracing/opentracing-go"
 	"github.com/redis/go-redis/v9"
@@ -59,48 +62,51 @@ func main() {
 	}()
 
 	logger.Info("Database initializing")
-	moviesDatabase, err := repository.NewPostgreDB(cfg.DBConfig)
+	moviesDatabase, err := postgresrepository.NewPostgreDB(cfg.DBConfig)
 	if err != nil {
 		logger.Errorf("Shutting down, connection to the database is not established: %s", err.Error())
 		return
 	}
+	defer moviesDatabase.Close()
 
 	logger.Info("Repository initializing")
-	moviesRepo := repository.NewMoviesRepository(moviesDatabase, logger.Logger)
-	defer moviesRepo.Shutdown()
+	moviesRepo := postgresrepository.NewMoviesRepository(moviesDatabase, logger.Logger)
 
-	genresDatabase, err := repository.NewPostgreDB(cfg.DBConfig)
+	genresDatabase, err := postgresrepository.NewPostgreDB(cfg.DBConfig)
 	if err != nil {
 		logger.Errorf("Shutting down, connection to the database is not established: %s", err.Error())
 		return
 	}
-	genresRepo := repository.NewGenresRepository(genresDatabase, logger.Logger)
-	defer genresRepo.Shutdown()
+	defer genresDatabase.Close()
 
-	countriesDatabase, err := repository.NewPostgreDB(cfg.DBConfig)
+	genresRepo := postgresrepository.NewGenresRepository(genresDatabase, logger.Logger)
+
+	countriesDatabase, err := postgresrepository.NewPostgreDB(cfg.DBConfig)
 	if err != nil {
 		logger.Errorf("Shutting down, connection to the database is not established: %s", err.Error())
 		return
 	}
-	countriesRepo := repository.NewCountriesRepository(countriesDatabase, logger.Logger)
-	defer countriesRepo.Shutdown()
+	defer countriesDatabase.Close()
 
-	ageRatingsDatabase, err := repository.NewPostgreDB(cfg.DBConfig)
+	countriesRepo := postgresrepository.NewCountriesRepository(countriesDatabase, logger.Logger)
+
+	ageRatingsDatabase, err := postgresrepository.NewPostgreDB(cfg.DBConfig)
 	if err != nil {
 		logger.Errorf("Shutting down, connection to the database is not established: %s", err.Error())
 		return
 	}
-	ageRatingsRepo := repository.NewAgeRatingsRepository(ageRatingsDatabase, logger.Logger)
-	defer ageRatingsRepo.Shutdown()
+	defer ageRatingsDatabase.Close()
 
-	moviesCache, err := repository.NewMoviesCache(logger.Logger, getMoviesCacheOptions(cfg))
+	ageRatingsRepo := postgresrepository.NewAgeRatingsRepository(ageRatingsDatabase, logger.Logger)
+
+	moviesCache, err := rediscache.NewMoviesCache(logger.Logger, getMoviesCacheOptions(cfg), metric)
 	if err != nil {
 		logger.Errorf("Shutting down, connection to the movies cache is not established: %s", err.Error())
 		return
 	}
 	defer moviesCache.Shutdown()
 
-	moviesPreviewCache, err := repository.NewMoviesPreviewCache(logger.Logger, getMoviesPreviewCacheOptions(cfg))
+	moviesPreviewCache, err := rediscache.NewMoviesPreviewCache(logger.Logger, getMoviesPreviewCacheOptions(cfg), metric)
 	if err != nil {
 		logger.Errorf("Shutting down, connection to the movies preview cache is not established: %s", err.Error())
 		return
@@ -120,20 +126,20 @@ func main() {
 		}
 	}()
 
-	imagesService := service.NewImageService(logger.Logger)
-
-	repoManager := repository.NewMoviesRepositoryManager(moviesRepo, moviesCache, moviesRepo,
-		moviesPreviewCache, ageRatingsRepo, genresRepo, countriesRepo, metric,
-		repository.RepositoryManagerConfig{
+	repository := repository.NewMoviesRepository(moviesRepo, moviesCache, moviesRepo,
+		moviesPreviewCache, ageRatingsRepo, genresRepo, countriesRepo,
+		repository.RepositoryConfig{
 			MovieTTL:        cfg.RepositoryManager.MovieTTL,
 			FilteredTTL:     cfg.RepositoryManager.FilteredTTL,
 			MoviePreviewTTL: cfg.RepositoryManager.MoviePreviewTTL,
 		}, logger.Logger)
 	logger.Info("Service initializing")
-	service := service.NewMoviesService(logger.Logger, repoManager, imagesService, cfg.PicturesUrlConfig)
+	service := service.NewMoviesService(logger.Logger, repository, cfg.PicturesUrlConfig)
+
+	handler := handler.NewMoviesServiceHandler(service)
 
 	logger.Info("Server initializing")
-	s := server.NewServer(logger.Logger, service)
+	s := server.NewServer(logger.Logger, handler)
 	go func() {
 		if err := s.Run(getListenServerConfig(cfg), metric, nil, nil); err != nil {
 			logger.Errorf("Shutting down, error while running server %s", err.Error())

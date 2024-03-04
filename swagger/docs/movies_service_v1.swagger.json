@@ -15,7 +15,8 @@
     }
   ],
   "schemes": [
-    "http"
+    "http",
+    "https"
   ],
   "consumes": [
     "application/json"
@@ -38,19 +39,19 @@
           "400": {
             "description": "Invalid input data, see error message.",
             "schema": {
-              "$ref": "#/definitions/rpcStatus"
+              "$ref": "#/definitions/googlerpcStatus"
             }
           },
           "404": {
             "description": "Returned when the resource does not exist.",
             "schema": {
-              "$ref": "#/definitions/rpcStatus"
+              "$ref": "#/definitions/googlerpcStatus"
             }
           },
           "500": {
             "description": "Something went wrong.",
             "schema": {
-              "$ref": "#/definitions/rpcStatus"
+              "$ref": "#/definitions/googlerpcStatus"
             }
           },
           "default": {
@@ -79,19 +80,19 @@
           "400": {
             "description": "Invalid input data, see error message.",
             "schema": {
-              "$ref": "#/definitions/rpcStatus"
+              "$ref": "#/definitions/googlerpcStatus"
             }
           },
           "404": {
             "description": "Returned when the resource does not exist.",
             "schema": {
-              "$ref": "#/definitions/rpcStatus"
+              "$ref": "#/definitions/googlerpcStatus"
             }
           },
           "500": {
             "description": "Something went wrong.",
             "schema": {
-              "$ref": "#/definitions/rpcStatus"
+              "$ref": "#/definitions/googlerpcStatus"
             }
           },
           "default": {
@@ -120,19 +121,19 @@
           "400": {
             "description": "Invalid input data, see error message.",
             "schema": {
-              "$ref": "#/definitions/rpcStatus"
+              "$ref": "#/definitions/googlerpcStatus"
             }
           },
           "404": {
             "description": "Returned when the resource does not exist.",
             "schema": {
-              "$ref": "#/definitions/rpcStatus"
+              "$ref": "#/definitions/googlerpcStatus"
             }
           },
           "500": {
             "description": "Something went wrong.",
             "schema": {
-              "$ref": "#/definitions/rpcStatus"
+              "$ref": "#/definitions/googlerpcStatus"
             }
           },
           "default": {
@@ -161,19 +162,19 @@
           "400": {
             "description": "Invalid input data, see error message.",
             "schema": {
-              "$ref": "#/definitions/rpcStatus"
+              "$ref": "#/definitions/googlerpcStatus"
             }
           },
           "404": {
             "description": "Returned when the resource does not exist.",
             "schema": {
-              "$ref": "#/definitions/rpcStatus"
+              "$ref": "#/definitions/googlerpcStatus"
             }
           },
           "500": {
             "description": "Something went wrong.",
             "schema": {
-              "$ref": "#/definitions/rpcStatus"
+              "$ref": "#/definitions/googlerpcStatus"
             }
           },
           "default": {
@@ -218,19 +219,19 @@
           "400": {
             "description": "Invalid input data, see error message.",
             "schema": {
-              "$ref": "#/definitions/rpcStatus"
+              "$ref": "#/definitions/googlerpcStatus"
             }
           },
           "404": {
             "description": "Returned when the resource does not exist.",
             "schema": {
-              "$ref": "#/definitions/rpcStatus"
+              "$ref": "#/definitions/googlerpcStatus"
             }
           },
           "500": {
             "description": "Something went wrong.",
             "schema": {
-              "$ref": "#/definitions/rpcStatus"
+              "$ref": "#/definitions/googlerpcStatus"
             }
           },
           "default": {
@@ -275,19 +276,19 @@
           "400": {
             "description": "Invalid input data, see error message.",
             "schema": {
-              "$ref": "#/definitions/rpcStatus"
+              "$ref": "#/definitions/googlerpcStatus"
             }
           },
           "404": {
             "description": "Returned when the resource does not exist.",
             "schema": {
-              "$ref": "#/definitions/rpcStatus"
+              "$ref": "#/definitions/googlerpcStatus"
             }
           },
           "500": {
             "description": "Something went wrong.",
             "schema": {
-              "$ref": "#/definitions/rpcStatus"
+              "$ref": "#/definitions/googlerpcStatus"
             }
           },
           "default": {

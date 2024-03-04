@@ -15,15 +15,19 @@ type Metrics interface {
 	IncCacheHits(method string, times int32)
 	IncCacheMiss(method string, times int32)
 	IncHits(status int, method, path string)
+	IncRestPanicsTotal()
+	IncGrpcPanicsTotal()
 	ObserveResponseTime(status int, method, path string, observeTime float64)
 }
 
 type PrometheusMetrics struct {
-	HitsTotal prometheus.Counter
-	Hits      *prometheus.CounterVec
-	CacheHits *prometheus.CounterVec
-	CacheMiss *prometheus.CounterVec
-	Times     *prometheus.HistogramVec
+	HitsTotal             prometheus.Counter
+	Hits                  *prometheus.CounterVec
+	CacheHits             *prometheus.CounterVec
+	CacheMiss             *prometheus.CounterVec
+	Times                 *prometheus.HistogramVec
+	RestPanicRecoverTotal prometheus.Counter
+	GrpcPanicRecoverTotal prometheus.Counter
 }
 
 func CreateMetrics(name string) (*PrometheusMetrics, error) {
@@ -76,6 +80,17 @@ func CreateMetrics(name string) (*PrometheusMetrics, error) {
 		return nil, err
 	}
 
+	metr.RestPanicRecoverTotal = prometheus.NewCounter(prometheus.CounterOpts{
+		Name: name + "_rest_panic_recover_total",
+	})
+	if err := prometheus.Register(metr.RestPanicRecoverTotal); err != nil {
+		return nil, err
+	}
+
+	metr.GrpcPanicRecoverTotal = prometheus.NewCounter(prometheus.CounterOpts{
+		Name: name + "_grpc_panic_recover_total",
+	})
+
 	if err := prometheus.Register(collectors.NewBuildInfoCollector()); err != nil {
 		return nil, err
 	}
@@ -115,4 +130,12 @@ func (metr *PrometheusMetrics) IncCacheMiss(method string, times int32) {
 
 func (metr *PrometheusMetrics) ObserveResponseTime(status int, method, path string, observeTime float64) {
 	metr.Times.WithLabelValues(strconv.Itoa(status), method, path).Observe(observeTime)
+}
+
+func (metr *PrometheusMetrics) IncRestPanicsTotal() {
+	metr.RestPanicRecoverTotal.Inc()
+}
+
+func (metr *PrometheusMetrics) IncGrpcPanicsTotal() {
+	metr.GrpcPanicRecoverTotal.Inc()
 }
