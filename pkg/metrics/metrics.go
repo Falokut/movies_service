@@ -90,7 +90,9 @@ func CreateMetrics(name string) (*PrometheusMetrics, error) {
 	metr.GrpcPanicRecoverTotal = prometheus.NewCounter(prometheus.CounterOpts{
 		Name: name + "_grpc_panic_recover_total",
 	})
-
+	if err := prometheus.Register(metr.GrpcPanicRecoverTotal); err != nil {
+		return nil, err
+	}
 	if err := prometheus.Register(collectors.NewBuildInfoCollector()); err != nil {
 		return nil, err
 	}

@@ -4,7 +4,7 @@
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/Falokut/movies_service)
 [![Go](https://github.com/Falokut/movies_service/actions/workflows/go.yml/badge.svg?branch=master)](https://github.com/Falokut/movies_service/actions/workflows/go.yml) ![](https://changkun.de/urlstat?mode=github&repo=Falokut/movies_service)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
-
+---
 
 # Content
 + [Configuration](#configuration)
